@@ -71,4 +71,4 @@ Para compatibilidade com o plugin antigo, valores de WhatsApp vindos do adaptado
 
 ## HTTP
 
-O adaptador Elementor não chama `wp_remote_post` diretamente. Ele monta o payload e usa `Brevo_Leads_Capture_Brevo_Client`, mantendo a integração HTTP centralizada.
+O adaptador Elementor não chama `wp_remote_post` diretamente. Ele monta o payload e usa `CRM_Leads_Capture_Brevo_Client`, mantendo a integração HTTP centralizada.

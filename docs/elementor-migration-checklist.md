@@ -8,8 +8,8 @@ rapido de compatibilidade por formulario.
 
 ## Antes da troca
 
-- Confirme que `brevo-leads-capture` está ativo.
-- Configure `BREVO_LEADS_CAPTURE_API_KEY` ou salve a API key no admin do plugin.
+- Confirme que `crm-leads-capture` está ativo.
+- Configure `CRM_LEADS_CAPTURE_BREVO_API_KEY` ou salve a API key no admin do plugin.
 - Configure lista padrão global, se aplicável.
 - Escolha um formulário Elementor real para teste.
 
@@ -48,7 +48,7 @@ Para cada formulário crítico:
 
 ## Diferenças intencionais
 
-- A chamada HTTP agora fica em `Brevo_Leads_Capture_Brevo_Client`.
+- A chamada HTTP agora fica em `CRM_Leads_Capture_Brevo_Client`.
 - A API key global do plugin tem prioridade sobre a API key configurada no formulário.
 - Se `brevo_list_id` estiver vazio, o plugin usa a lista padrão global.
 - Mensagens de erro ao usuário são genéricas para não expor resposta bruta da Brevo.

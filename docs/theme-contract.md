@@ -6,8 +6,8 @@ Este plugin concentra captura e envio para Brevo. O tema deve cuidar apenas da r
 
 - Renderizar o formulário.
 - Postar para `admin_url( 'admin-post.php' )`.
-- Incluir `action=brevo_leads_capture_free_material`.
-- Incluir nonce `brevo_leads_capture_free_material`.
+- Incluir `action=crm_leads_capture_free_material`.
+- Incluir nonce `crm_leads_capture_free_material`.
 - Incluir `material_id`.
 - Renderizar campos de nome, email e WhatsApp.
 - Renderizar honeypot vazio.
@@ -37,13 +37,13 @@ Este plugin concentra captura e envio para Brevo. O tema deve cuidar apenas da r
 Campo obrigatório:
 
 ```html
-<input type="hidden" name="action" value="brevo_leads_capture_free_material">
+<input type="hidden" name="action" value="crm_leads_capture_free_material">
 ```
 
 Nonce:
 
 ```php
-wp_nonce_field( 'brevo_leads_capture_free_material' );
+wp_nonce_field( 'crm_leads_capture_free_material' );
 ```
 
 Material atual:
@@ -55,17 +55,17 @@ Material atual:
 Honeypot:
 
 ```html
-<input type="text" name="brevo_leads_capture_website" value="" autocomplete="off" tabindex="-1">
+<input type="text" name="crm_leads_capture_website" value="" autocomplete="off" tabindex="-1">
 ```
 
 ## Metadados por material
 
-- `_brevo_leads_capture_list_id`: lista Brevo específica do material.
-- `_brevo_leads_capture_delivery_url`: URL de entrega pós-captura.
+- `_crm_leads_capture_list_id`: lista Brevo específica do material.
+- `_crm_leads_capture_delivery_url`: URL de entrega pós-captura.
 
 Fallback temporário:
 
-- `_executive_signal_material_capture_url`: usado como URL de entrega quando `_brevo_leads_capture_delivery_url` está vazio.
+- `_executive_signal_material_capture_url`: usado como URL de entrega quando `_crm_leads_capture_delivery_url` está vazio.
 
 ## Campos enviados
 
@@ -85,32 +85,32 @@ O tema não deve tentar interpretar resposta da Brevo.
 Em falha, o plugin redireciona com:
 
 ```text
-brevo_leads_capture=error
-brevo_error=<codigo-controlado>
+crm_leads_capture=error
+crm_error=<codigo-controlado>
 ```
 
 Para exibir a mensagem junto do formulário no fallback server-rendered, o tema
 pode chamar:
 
 ```php
-<?php brevo_leads_capture_render_free_material_error_message(); ?>
+<?php crm_leads_capture_render_free_material_error_message(); ?>
 ```
 
 Ou usar o shortcode:
 
 ```text
-[brevo_leads_capture_error]
+[crm_leads_capture_error]
 ```
 
 O markup gerado segue o padrão `OperationalFeedback` do Executive Signal Design
 System: `es-panel es-operational-feedback`,
 `data-feedback-tone="danger"`, badge `es-badge` e mensagem
 `es-operational-feedback__message`. Também inclui
-`data-brevo-leads-capture-message`, `role="alert"` e `aria-live="polite"`.
+`data-crm-leads-capture-message`, `role="alert"` e `aria-live="polite"`.
 Quando não há erro na query string, o container é renderizado vazio e oculto
 para também servir ao enhancement em JavaScript.
 
-As mensagens públicas são configuráveis em `Configurações > Brevo Leads Capture`.
+As mensagens públicas são configuráveis em `Configurações > CRM Leads Capture`.
 O tema deve tratar o texto como conteúdo pronto para exibição e não deve mapear
 os códigos internamente.
 
@@ -119,24 +119,24 @@ os códigos internamente.
 O plugin enfileira um JavaScript leve que intercepta formulários com:
 
 ```html
-<input type="hidden" name="action" value="brevo_leads_capture_free_material">
+<input type="hidden" name="action" value="crm_leads_capture_free_material">
 ```
 
 Quando o JavaScript está disponível, a submissão é enviada para:
 
 ```text
-POST /wp-json/brevo-leads-capture/v1/free-material
+POST /wp-json/crm-leads-capture/v1/free-material
 ```
 
 Antes do POST, o script busca um nonce fresco, sem cookies e com cache
 desabilitado, em:
 
 ```text
-GET /wp-json/brevo-leads-capture/v1/free-material/nonce
+GET /wp-json/crm-leads-capture/v1/free-material/nonce
 ```
 
 No envio REST, o script remove `_wpnonce` do payload e envia esse valor fresco
-em `brevo_leads_capture_nonce`. O campo `_wpnonce` continua existindo no HTML
+em `crm_leads_capture_nonce`. O campo `_wpnonce` continua existindo no HTML
 para o fallback `admin-post.php`, mas não deve ser usado no POST REST porque o
 WordPress reserva `_wpnonce` para a verificação nativa `wp_rest`.
 
@@ -144,7 +144,7 @@ Em sucesso, o plugin limpa os campos visíveis do formulário, exibe uma mensage
 configurável em `OperationalFeedback` com `data-feedback-tone="success"`, mostra
 um link para acessar o material imediatamente e redireciona automaticamente após
 5 segundos. Em falha, a URL da página não muda e a mensagem configurada é
-exibida no container `data-brevo-leads-capture-message` mais próximo do
+exibida no container `data-crm-leads-capture-message` mais próximo do
 formulário. Se o container não existir, o script cria um dentro do próprio
 formulário usando o mesmo markup `OperationalFeedback` com
 `data-feedback-tone="danger"`.
@@ -156,7 +156,7 @@ API não são exibidos diretamente para o usuário; o script cai nas mensagens
 públicas configuradas no plugin.
 
 Quando uma mensagem foi renderizada por redirect com query string, o script
-remove `brevo_leads_capture` e `brevo_error` da URL após o carregamento. Assim,
+remove `crm_leads_capture` e `crm_error` da URL após o carregamento. Assim,
 atualizar a página não mantém o mesmo erro visível por causa da URL antiga.
 
 Sem JavaScript, o fluxo continua usando `admin-post.php` e redirect com query

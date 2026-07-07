@@ -1,76 +1,130 @@
-# Brevo Leads Capture
+# CRM Leads Capture
 
-Plugin WordPress para centralizar capturas de leads no Brevo CRM.
+Plugin WordPress para centralizar captura de leads e envio para CRMs.
 
-## Objetivo
+## Responsabilidade
 
-O plugin deve receber dados de formulários WordPress, criar ou atualizar contatos no Brevo e adicionar esses contatos a listas específicas.
+Este plugin processa submissões de captura, valida nonce/honeypot/dados do lead,
+monta um payload normalizado e delega o envio ao provider de CRM ativo.
 
-O caso inicial deve continuar atendendo Elementor Pro, mas também permitir captura de leads em outras interfaces, como a página de materiais gratuitos do tema `executive-signal-wordpress-theme`. O contexto histórico de migração fica documentado em `docs/implementation-plan.md`.
+O domínio persistente de materiais gratuitos continua fora deste plugin. Quando
+o plugin `free-materials` estiver ativo, este plugin consome o CPT
+`material_gratuito`, mas não registra CPT, taxonomia, rewrites ou templates
+públicos completos.
 
-## Casos de uso iniciais
+## Providers
 
-- Enviar leads de formulários Elementor Pro para uma lista Brevo.
-- Enviar leads do formulário de materiais gratuitos para uma lista Brevo.
-- Redirecionar usuários para uma URL de entrega após captura bem-sucedida.
-- Mapear campos como nome, email, WhatsApp, origem, material e UTMs para atributos do Brevo.
+Providers iniciais:
 
-## Integração Brevo
+- `brevo`: reaproveita o client de contatos da Brevo e suporta API key, lista
+  padrão e lista por material.
+- `rd_station`: envia conversões para a API Marketing do RD Station em
+  `https://api.rd.services/platform/conversions`, com `event_type=CONVERSION`,
+  `event_family=CDP` e payload de conversão.
 
-A integração deve usar a API de contatos da Brevo:
+O provider ativo é escolhido em `Configurações > CRM Leads Capture`.
 
-- `POST https://api.brevo.com/v3/contacts`
-- header `api-key`
-- `email`
-- `attributes`
-- `listIds`
-- `updateEnabled: true`
+## Configuração
 
-O plugin deve manter a API key fora do código versionado.
+Opção nova:
 
-## Relação com o tema Executive Signal
-
-O tema `executive-signal-wordpress-theme` deve continuar responsável por layout, templates e exibição dos materiais gratuitos.
-
-Este plugin deve ser responsável pela captura e envio ao Brevo. O tema pode apontar o formulário para um endpoint do plugin e receber de volta o redirecionamento para a página ou URL de entrega do material.
-
-## Desenvolvimento e testes
-
-O projeto usa PHPUnit com uma suíte unitária rápida e uma suíte integrada com o ambiente de testes do WordPress.
-
-```bash
-composer install
-composer test:unit
-composer install:wp-tests
-composer test
+```php
+crm_leads_capture_settings
 ```
 
-Mais detalhes estão em `docs/testing.md`.
+Formato principal:
 
-## Captura de materiais gratuitos
+```php
+array(
+    'active_provider' => 'brevo',
+    'default_delivery_url' => '',
+    'providers'       => array(
+        'brevo'      => array(
+            'enabled'         => true,
+            'api_key'         => '',
+            'default_list_id' => 0,
+        ),
+        'rd_station' => array(
+            'enabled'                       => true,
+            'api_key'                       => '',
+            'default_conversion_identifier' => '',
+            'default_tags'                  => '',
+        ),
+    ),
+)
+```
 
-O contrato do formulário server-rendered para materiais gratuitos está documentado em `docs/free-material-capture.md`.
+Constantes suportadas:
 
-## Configurações globais
+```php
+define( 'CRM_LEADS_CAPTURE_BREVO_API_KEY', '...' );
+define( 'CRM_LEADS_CAPTURE_BREVO_DEFAULT_LIST_ID', 123 );
+define( 'CRM_LEADS_CAPTURE_RD_STATION_API_KEY', '...' );
+```
 
-A configuração global de API key e lista padrão Brevo está documentada em `docs/settings.md`.
+Constantes antigas da Brevo continuam lidas como fallback:
 
-## Compatibilidade Elementor
+```php
+define( 'BREVO_LEADS_CAPTURE_API_KEY', '...' );
+define( 'BREVO_LEADS_CAPTURE_DEFAULT_LIST_ID', 123 );
+```
 
-A action de formulário Elementor Pro e os nomes de controles preservados estão documentados em `docs/elementor-compatibility.md`.
+Campos de credencial nunca exibem o valor salvo no admin.
 
-## Operação
+## Materiais Gratuitos
 
-Instalação, contrato com o tema, migração Elementor e preparação de release:
+Meta keys novas:
 
-- `docs/installation.md`
-- `docs/theme-contract.md`
-- `docs/elementor-migration-checklist.md`
-- `docs/elementor-real-forms-migration.md`
-- `docs/release-preparation.md`
-- `docs/github-release-updates.md`
-- `CHANGELOG.md`
+- `_crm_leads_capture_provider`
+- `_crm_leads_capture_delivery_url`
+- `_crm_leads_capture_list_id`
+- `_crm_leads_capture_rd_station_conversion_identifier`
+- `_crm_leads_capture_rd_station_tags`
 
-## Status
+Fallbacks legados preservados:
 
-Plugin em desenvolvimento com core Brevo, captura de materiais gratuitos, compatibilidade Elementor, configurações globais e documentação operacional já implementados.
+- `_brevo_leads_capture_list_id`
+- `_brevo_leads_capture_delivery_url`
+- `_executive_signal_material_capture_url`
+
+Quando o material não define URL de entrega própria, o plugin usa
+`default_delivery_url` configurada na aba `General`.
+
+## Endpoints
+
+Admin post:
+
+```text
+action=crm_leads_capture_free_material
+```
+
+REST:
+
+```text
+POST /wp-json/crm-leads-capture/v1/free-material
+GET  /wp-json/crm-leads-capture/v1/free-material/nonce
+```
+
+Compatibilidade temporária:
+
+- action antigo `brevo_leads_capture_free_material`
+- nonce/action antigo `brevo_leads_capture_free_material`
+- campo REST antigo `brevo_leads_capture_nonce`
+
+## Segurança
+
+- Entradas são sanitizadas e nonces validados.
+- Falhas externas não expõem API keys, payload bruto com dados pessoais nem
+  resposta sensível do CRM no front-end.
+- Logs técnicos só são emitidos quando `WP_DEBUG` está ativo e passam por
+  redação de chaves, tokens, e-mails, telefones, payloads e bodies.
+
+## Testes
+
+Com PHP e dependências instaladas:
+
+```bash
+composer test:unit
+composer test:wordpress
+composer test
+```

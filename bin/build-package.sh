@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PLUGIN_SLUG="brevo-leads-capture"
+PLUGIN_SLUG="crm-leads-capture"
 MAIN_FILE="${ROOT_DIR}/${PLUGIN_SLUG}.php"
 
 VERSION="$(sed -nE 's/^[[:space:]*]*Version:[[:space:]]*([^[:space:]].*)$/\1/ip' "${MAIN_FILE}" | head -n 1 | tr -d '\r')"

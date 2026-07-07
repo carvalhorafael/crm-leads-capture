@@ -8,9 +8,9 @@
 
 ## Instalação
 
-1. Instale o plugin no diretório `wp-content/plugins/brevo-leads-capture`.
+1. Instale o plugin no diretório `wp-content/plugins/crm-leads-capture`.
 2. Ative o plugin no admin do WordPress.
-3. Configure a API key Brevo em `Configurações > Brevo Leads Capture` ou por constante.
+3. Configure a API key Brevo em `Configurações > CRM Leads Capture` ou por constante.
 4. Configure uma lista padrão Brevo, se a maioria das capturas usar a mesma lista.
 5. Para materiais gratuitos, configure os metadados no próprio material.
 
@@ -19,15 +19,15 @@
 Preferível para produção:
 
 ```php
-define( 'BREVO_LEADS_CAPTURE_API_KEY', 'xkeysib-...' );
-define( 'BREVO_LEADS_CAPTURE_DEFAULT_LIST_ID', 123 );
+define( 'CRM_LEADS_CAPTURE_BREVO_API_KEY', 'xkeysib-...' );
+define( 'CRM_LEADS_CAPTURE_BREVO_DEFAULT_LIST_ID', 123 );
 ```
 
 Não versione chaves reais em arquivos do projeto.
 
 ## Configuração por admin
 
-Use `Configurações > Brevo Leads Capture` para:
+Use `Configurações > CRM Leads Capture` para:
 
 - salvar API key no banco do WordPress;
 - definir lista padrão Brevo;
@@ -63,7 +63,7 @@ Para gerar um ZIP instalavel:
 composer package
 ```
 
-O pacote e gerado em `dist/` com uma pasta raiz `brevo-leads-capture/`.
+O pacote e gerado em `dist/` com uma pasta raiz `crm-leads-capture/`.
 Antes de usar em producao, siga `docs/release-preparation.md`.
 
 ## Atualizacoes pelo WordPress

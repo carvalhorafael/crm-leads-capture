@@ -2,10 +2,11 @@
 
 ## Contexto do projeto
 
-Este repositorio contem o plugin WordPress `brevo-leads-capture`.
+Este repositorio contem o plugin WordPress `crm-leads-capture`.
 
-O objetivo do plugin e centralizar capturas de leads para o Brevo CRM em uma
-camada reutilizavel, com adaptadores separados para cada origem de captura.
+O objetivo do plugin e centralizar capturas de leads para CRMs em uma camada
+reutilizavel, com providers de CRM e adaptadores separados para cada origem de
+captura.
 Consulte `docs/implementation-plan.md` para escopo de produto, plano de
 implementacao, decisoes pendentes e contexto historico de migracao.
 
@@ -57,7 +58,7 @@ implementacao, decisoes pendentes e contexto historico de migracao.
 - Tratar falhas externas sem expor detalhes sensiveis ao usuario final.
 - Logar erros tecnicos de forma util para desenvolvimento, sem registrar API
   keys, tokens, dados pessoais desnecessarios ou payloads sensiveis.
-- Internacionalizar textos visiveis com text domain `brevo-leads-capture`.
+- Internacionalizar textos visiveis com text domain `crm-leads-capture`.
 - Manter compatibilidade com WordPress moderno e PHP suportado pelo ambiente
   alvo antes de usar sintaxe nova.
 - Separar integracoes por adaptador. Um adaptador nao deve conhecer detalhes
@@ -71,7 +72,8 @@ Este projeto deve estar preparado para ser publicado no GitHub.
   banco, logs com dados pessoais, arquivos `.env` reais, `.npmrc` real ou
   configuracoes locais sensiveis.
 - Preferir constantes de ambiente para segredos, por exemplo
-  `BREVO_LEADS_CAPTURE_API_KEY`, ou settings administrativos com cuidado
+  `CRM_LEADS_CAPTURE_BREVO_API_KEY`, `CRM_LEADS_CAPTURE_RD_STATION_API_KEY`, ou
+  settings administrativos com cuidado
   explicito de seguranca.
 - Manter exemplos de configuracao sem valores reais, usando apenas arquivos como
   `.env.example` ou placeholders evidentes.
@@ -137,7 +139,7 @@ gh workflow run prepare-release.yml --ref develop -f bump=patch -f base_branch=d
 6. Depois que `develop` for mergeado em `main`, acompanhar o workflow `Release`,
    que deve criar a tag `vX.Y.Z`, publicar a GitHub Release e anexar o ZIP.
 7. Conferir que a GitHub Release recebeu o asset
-   `brevo-leads-capture-X.Y.Z.zip`.
+   `crm-leads-capture-X.Y.Z.zip`.
 
 Merges normais em `develop` nao devem publicar release automaticamente. A
 publicacao acontece quando a versao preparada chega em `main`.
