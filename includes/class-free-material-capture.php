@@ -712,7 +712,7 @@ class CRM_Leads_Capture_Free_Material_Capture {
 			return '';
 		}
 
-		return esc_url_raw( (string) $value );
+		return esc_url_raw( trim( (string) $value ) );
 	}
 
 	/**

@@ -585,7 +585,9 @@ class CRM_Leads_Capture_Settings {
 			return '';
 		}
 
-		return function_exists( 'esc_url_raw' ) ? esc_url_raw( (string) $value ) : filter_var( (string) $value, FILTER_SANITIZE_URL );
+		$value = trim( (string) $value );
+
+		return function_exists( 'esc_url_raw' ) ? esc_url_raw( $value ) : filter_var( $value, FILTER_SANITIZE_URL );
 	}
 
 	private function absint( $value ): int {
