@@ -312,6 +312,49 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		$this->assertSame( 456, $this->provider->last_context['list_id'] );
 	}
 
+	public function test_uses_global_delivery_url_when_material_has_no_delivery_url(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'default_delivery_url' => 'https://example.com/default-download',
+			)
+		);
+		$material_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_DELIVERY_URL => '',
+			)
+		);
+
+		$result = $this->capture->process_submission( $this->valid_request( $material_id ) );
+
+		$this->assertTrue( $result->is_successful() );
+		$this->assertSame( 'https://example.com/default-download', $result->data()['redirect_url'] );
+	}
+
+	public function test_material_meta_box_uses_neutral_labels_when_provider_comes_from_global_setting(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'rd_station',
+			)
+		);
+		$material_id = $this->create_material();
+		$post        = get_post( $material_id );
+
+		ob_start();
+		$this->capture->render_material_meta_box( $post );
+		$output = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'Provider efetivo: RD Station.', $output );
+		$this->assertStringContainsString( 'Identificador de conversão', $output );
+		$this->assertStringContainsString( 'Tags', $output );
+		$this->assertStringContainsString( 'Se ficar em branco, será usada a URL de entrega configurada no plugin.', $output );
+		$this->assertStringContainsString( 'Nome do evento de conversão que aparecerá na RD Station para este lead.', $output );
+		$this->assertStringContainsString( 'Tags adicionadas ao lead para segmentação e automações.', $output );
+		$this->assertStringNotContainsString( 'Conversão RD Station</strong>', $output );
+		$this->assertStringNotContainsString( 'Tags RD Station</strong>', $output );
+	}
+
 	public function test_returns_controlled_error_when_brevo_fails(): void {
 		$this->provider = new CRM_Leads_Capture_Test_Provider(
 			CRM_Leads_Capture_Result::failure(

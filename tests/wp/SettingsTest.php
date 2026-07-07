@@ -77,12 +77,15 @@ class SettingsTest extends WP_UnitTestCase {
 		$sanitized = $this->settings->sanitize_options(
 			array(
 				'active_provider' => 'rd_station',
+				'default_delivery_url' => ' https://example.com/obrigado ',
 				'providers'       => array(
 					'brevo'      => array(
+						'enabled'         => '1',
 						'api_key'         => ' new-api-key ',
 						'default_list_id' => '321abc',
 					),
 					'rd_station' => array(
+						'enabled'                       => '1',
 						'api_key'                       => ' rd-key ',
 						'default_conversion_identifier' => ' Material Baixado ',
 						'default_tags'                  => ' material, crm ',
@@ -97,6 +100,46 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertSame( 'rd-key', $sanitized['providers']['rd_station']['api_key'] );
 		$this->assertSame( 'Material Baixado', $sanitized['providers']['rd_station']['default_conversion_identifier'] );
 		$this->assertSame( 'material, crm', $sanitized['providers']['rd_station']['default_tags'] );
+		$this->assertTrue( $sanitized['providers']['brevo']['enabled'] );
+		$this->assertTrue( $sanitized['providers']['rd_station']['enabled'] );
+		$this->assertSame( 'https://example.com/obrigado', $sanitized['default_delivery_url'] );
+	}
+
+	public function test_sanitize_options_preserves_other_provider_settings_when_saving_one_tab(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'brevo',
+				'default_delivery_url' => 'https://example.com/default',
+				'providers'       => array(
+					'brevo'      => array(
+						'enabled'         => true,
+						'api_key'         => 'existing-brevo-key',
+						'default_list_id' => 123,
+					),
+					'rd_station' => array(
+						'enabled'                       => true,
+						'api_key'                       => 'existing-rd-key',
+						'default_conversion_identifier' => 'Material antigo',
+						'default_tags'                  => 'old',
+					),
+				),
+			)
+		);
+
+		$sanitized = $this->settings->sanitize_options(
+			array(
+				'active_provider' => 'rd_station',
+			)
+		);
+
+		$this->assertSame( 'rd_station', $sanitized['active_provider'] );
+		$this->assertSame( 'https://example.com/default', $sanitized['default_delivery_url'] );
+		$this->assertTrue( $sanitized['providers']['brevo']['enabled'] );
+		$this->assertSame( 'existing-brevo-key', $sanitized['providers']['brevo']['api_key'] );
+		$this->assertSame( 123, $sanitized['providers']['brevo']['default_list_id'] );
+		$this->assertTrue( $sanitized['providers']['rd_station']['enabled'] );
+		$this->assertSame( 'existing-rd-key', $sanitized['providers']['rd_station']['api_key'] );
 	}
 
 	public function test_sanitize_options_accepts_custom_error_messages(): void {
@@ -146,6 +189,17 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertSame( 'Tudo certo. Redirecionando para o material.', $this->settings->success_message() );
 	}
 
+	public function test_default_delivery_url_uses_configured_value(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'default_delivery_url' => 'https://example.com/default-download',
+			)
+		);
+
+		$this->assertSame( 'https://example.com/default-download', $this->settings->default_delivery_url() );
+	}
+
 	public function test_status_panel_does_not_render_api_key_value(): void {
 		update_option(
 			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
@@ -166,5 +220,23 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Status da configuração', $output );
 		$this->assertStringContainsString( 'Configurada', $output );
 		$this->assertStringNotContainsString( 'secret-api-key', $output );
+	}
+
+	public function test_render_tabs_marks_current_tab_active(): void {
+		$_GET['tab'] = 'messages';
+
+		ob_start();
+		$this->settings->render_tabs();
+		$output = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'nav-tab-wrapper', $output );
+		$this->assertStringContainsString( 'General', $output );
+		$this->assertStringContainsString( 'Messages', $output );
+		$this->assertStringContainsString( 'RD Station', $output );
+		$this->assertStringContainsString( 'Brevo', $output );
+		$this->assertStringContainsString( 'tab=messages', $output );
+		$this->assertStringContainsString( 'nav-tab-active', $output );
+
+		unset( $_GET['tab'] );
 	}
 }

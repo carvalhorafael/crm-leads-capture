@@ -37,12 +37,15 @@ Formato principal:
 ```php
 array(
     'active_provider' => 'brevo',
+    'default_delivery_url' => '',
     'providers'       => array(
         'brevo'      => array(
+            'enabled'         => true,
             'api_key'         => '',
             'default_list_id' => 0,
         ),
         'rd_station' => array(
+            'enabled'                       => true,
             'api_key'                       => '',
             'default_conversion_identifier' => '',
             'default_tags'                  => '',
@@ -83,6 +86,9 @@ Fallbacks legados preservados:
 - `_brevo_leads_capture_list_id`
 - `_brevo_leads_capture_delivery_url`
 - `_executive_signal_material_capture_url`
+
+Quando o material não define URL de entrega própria, o plugin usa
+`default_delivery_url` configurada na aba `General`.
 
 ## Endpoints
 
