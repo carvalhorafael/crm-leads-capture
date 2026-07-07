@@ -63,7 +63,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -C "${branch}"
-          git add brevo-leads-capture.php CHANGELOG.md
+          git add crm-leads-capture.php CHANGELOG.md
           git commit -m "Prepare release ${{ steps.release.outputs.tag }}"
           git push --force-with-lease origin "${branch}"
 
