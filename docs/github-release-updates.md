@@ -8,7 +8,7 @@ do WordPress a partir de GitHub Releases.
 O arquivo principal do plugin declara:
 
 ```text
-Update URI: https://github.com/carvalhorafael/brevo-leads-capture
+Update URI: https://github.com/carvalhorafael/crm-leads-capture
 ```
 
 Esse header evita colisao com plugins do diretório wordpress.org.
@@ -22,7 +22,7 @@ hooks nativos do WordPress:
 O checker consulta:
 
 ```text
-https://api.github.com/repos/carvalhorafael/brevo-leads-capture/releases/latest
+https://api.github.com/repos/carvalhorafael/crm-leads-capture/releases/latest
 ```
 
 Se a ultima release publica tiver uma tag maior que a versao instalada e tiver
@@ -31,19 +31,19 @@ um asset com o nome esperado, o WordPress passa a exibir a atualizacao no admin.
 Nome esperado do asset:
 
 ```text
-brevo-leads-capture-<versao>.zip
+crm-leads-capture-<versao>.zip
 ```
 
 Exemplo:
 
 ```text
-brevo-leads-capture-0.2.0.zip
+crm-leads-capture-0.2.0.zip
 ```
 
 O ZIP precisa conter uma pasta raiz:
 
 ```text
-brevo-leads-capture/
+crm-leads-capture/
 ```
 
 ## Fluxo de release automatizado
@@ -67,7 +67,7 @@ Esse workflow:
 
 1. calcula a proxima versao;
 2. atualiza o header `Version`;
-3. atualiza `BREVO_LEADS_CAPTURE_VERSION`;
+3. atualiza `CRM_LEADS_CAPTURE_VERSION`;
 4. adiciona uma entrada em `CHANGELOG.md`;
 5. abre ou atualiza uma PR `release/vX.Y.Z` para `develop`.
 
@@ -99,7 +99,7 @@ acontece quando a versao preparada chega em `main`.
 - A release nao pode ser draft.
 - A release nao pode ser pre-release.
 - A tag precisa seguir `vX.Y.Z`.
-- O asset da release precisa seguir `brevo-leads-capture-X.Y.Z.zip`.
+- O asset da release precisa seguir `crm-leads-capture-X.Y.Z.zip`.
 - A versao do header e a constante precisam bater com a tag sem o prefixo `v`.
 
 ## Tempo ate aparecer no WordPress
@@ -111,7 +111,7 @@ Em uma instalacao de teste, da para forcar nova checagem pela tela de updates do
 WordPress ou limpando o transient:
 
 ```bash
-wp transient delete --network brevo_leads_capture_github_release
+wp transient delete --network crm_leads_capture_github_release
 wp transient delete --network update_plugins
 ```
 

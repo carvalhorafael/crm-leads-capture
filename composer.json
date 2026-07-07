@@ -1,6 +1,6 @@
 {
-  "name": "carvalhorafael/brevo-leads-capture",
-  "description": "Plugin WordPress para centralizar capturas de leads no Brevo CRM.",
+  "name": "carvalhorafael/crm-leads-capture",
+  "description": "Plugin WordPress para centralizar capturas de leads e envio para CRMs.",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "require": {

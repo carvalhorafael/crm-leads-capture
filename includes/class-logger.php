@@ -2,14 +2,14 @@
 /**
  * Controlled debug logger.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Brevo_Leads_Capture_Logger {
+class CRM_Leads_Capture_Logger {
 	private const REDACTED = '[redacted]';
 
 	/**
@@ -20,7 +20,7 @@ class Brevo_Leads_Capture_Logger {
 			return;
 		}
 
-		error_log( '[brevo-leads-capture] ' . $message . ' ' . wp_json_encode( $this->redact_context( $context ) ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( '[crm-leads-capture] ' . $message . ' ' . wp_json_encode( $this->redact_context( $context ) ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 
 	public function is_enabled(): bool {

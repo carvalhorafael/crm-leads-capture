@@ -1,4 +1,4 @@
-# Especificacao inicial: Brevo Leads Capture
+# Especificacao inicial: CRM Leads Capture
 
 ## Contexto
 
@@ -18,7 +18,7 @@ Esse plugin adiciona uma action ao Elementor Pro para enviar dados de formulario
 - mapeamento de atributos como nome, sobrenome, WhatsApp e UTMs;
 - tratamento basico de erros da API.
 
-O novo plugin `brevo-leads-capture` deve reaproveitar essa experiencia, mas separar a integracao Brevo da camada Elementor.
+O novo plugin `crm-leads-capture` deve reaproveitar essa experiencia, mas separar a integracao Brevo da camada Elementor.
 
 ## Objetivo do produto
 
@@ -45,8 +45,8 @@ O objetivo final para o tema `executive-signal-wordpress-theme`:
 ## Arquitetura proposta
 
 ```text
-brevo-leads-capture/
-├── brevo-leads-capture.php
+crm-leads-capture/
+├── crm-leads-capture.php
 ├── includes/
 │   ├── class-plugin.php
 │   ├── class-brevo-client.php
@@ -78,7 +78,7 @@ Responsabilidades:
 Metodo sugerido:
 
 ```php
-public function create_or_update_contact( array $lead ): Brevo_Leads_Capture_Result
+public function create_or_update_contact( array $lead ): CRM_Leads_Capture_Result
 ```
 
 Payload esperado:
@@ -116,7 +116,7 @@ Responsavel por configuracoes globais.
 
 Decisoes pendentes:
 
-- API key via constante `BREVO_LEADS_CAPTURE_API_KEY`;
+- API key via constante `CRM_LEADS_CAPTURE_BREVO_API_KEY`;
 - API key via pagina de settings no admin;
 - list ID padrao via settings;
 - permitir sobrescrever list ID por origem/material.
@@ -133,10 +133,10 @@ Responsavel pela captura vinda do tema `executive-signal-wordpress-theme`.
 Opcoes de endpoint:
 
 1. `admin-post.php` com actions:
-   - `admin_post_nopriv_brevo_leads_capture_free_material`
-   - `admin_post_brevo_leads_capture_free_material`
+   - `admin_post_nopriv_crm_leads_capture_free_material`
+   - `admin_post_crm_leads_capture_free_material`
 2. REST API:
-   - `POST /wp-json/brevo-leads-capture/v1/free-material`
+   - `POST /wp-json/crm-leads-capture/v1/free-material`
 
 Recomendacao inicial:
 
@@ -195,9 +195,9 @@ O tema hoje tem metadados:
 
 Para a integracao, deve-se avaliar migrar ou adicionar:
 
-- `_brevo_leads_capture_list_id`
-- `_brevo_leads_capture_delivery_url`
-- `_brevo_leads_capture_success_mode` (opcional)
+- `_crm_leads_capture_list_id`
+- `_crm_leads_capture_delivery_url`
+- `_crm_leads_capture_success_mode` (opcional)
 
 Alternativa:
 
@@ -212,7 +212,7 @@ O tema deve:
 - renderizar o formulario;
 - incluir `action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"`;
 - incluir `method="post"`;
-- incluir hidden `action=brevo_leads_capture_free_material`;
+- incluir hidden `action=crm_leads_capture_free_material`;
 - incluir hidden `material_id`;
 - incluir nonce gerado pelo plugin ou por contrato documentado;
 - nao guardar API key;
@@ -283,7 +283,7 @@ Plano de migracao:
 
 ### Fase 1: Bootstrap do plugin
 
-- Criar `brevo-leads-capture.php`.
+- Criar `crm-leads-capture.php`.
 - Definir constantes.
 - Criar autoload simples ou includes manuais.
 - Criar classe principal de bootstrap.

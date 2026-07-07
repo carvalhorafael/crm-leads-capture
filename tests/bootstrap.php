@@ -2,7 +2,7 @@
 /**
  * Bootstrap file for WordPress integration tests.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
@@ -23,14 +23,14 @@ require_once $_tests_dir . '/includes/functions.php';
 /**
  * Load the plugin before WordPress finishes bootstrapping.
  */
-function brevo_leads_capture_manually_load_plugin(): void {
-	$plugin_file = dirname( __DIR__ ) . '/brevo-leads-capture.php';
+function crm_leads_capture_manually_load_plugin(): void {
+	$plugin_file = dirname( __DIR__ ) . '/crm-leads-capture.php';
 
 	if ( file_exists( $plugin_file ) ) {
 		require_once $plugin_file;
 	}
 }
 
-tests_add_filter( 'muplugins_loaded', 'brevo_leads_capture_manually_load_plugin' );
+tests_add_filter( 'muplugins_loaded', 'crm_leads_capture_manually_load_plugin' );
 
 require $_tests_dir . '/includes/bootstrap.php';

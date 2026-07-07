@@ -1,6 +1,6 @@
 # Preparacao de release e empacotamento
 
-Este documento inicia a fase de release do `brevo-leads-capture` para instalacao
+Este documento inicia a fase de release do `crm-leads-capture` para instalacao
 em producao.
 
 Status atual: pre-release `0.1.0`. O plugin ja possui core Brevo, captura de
@@ -19,10 +19,10 @@ concluidos:
 - `composer test` passa em ambiente com a suite oficial do WordPress instalada.
 - O cabecalho do plugin tem versao, requisitos, licenca, text domain e domain
   path coerentes.
-- `BREVO_LEADS_CAPTURE_VERSION` bate com o header `Version`.
-- O asset da GitHub Release segue `brevo-leads-capture-<versao>.zip`.
+- `CRM_LEADS_CAPTURE_VERSION` bate com o header `Version`.
+- O asset da GitHub Release segue `crm-leads-capture-<versao>.zip`.
 - `readme.md` descreve instalacao, configuracao e operacao.
-- As strings visiveis novas usam text domain `brevo-leads-capture`.
+- As strings visiveis novas usam text domain `crm-leads-capture`.
 - O pacote nao contem `.env`, `.npmrc`, logs, dumps, caches, `vendor/`, suites
   de teste ou instalacoes WordPress locais.
 - A migracao Elementor real seguiu `docs/elementor-real-forms-migration.md`.
@@ -68,10 +68,10 @@ composer package
 O comando gera:
 
 ```text
-dist/brevo-leads-capture-<versao>.zip
+dist/crm-leads-capture-<versao>.zip
 ```
 
-O ZIP contem uma pasta raiz `brevo-leads-capture/`, formato esperado para
+O ZIP contem uma pasta raiz `crm-leads-capture/`, formato esperado para
 instalacao manual pelo admin do WordPress ou por upload no servidor.
 
 Arquivos de desenvolvimento ficam fora do ZIP:
@@ -96,14 +96,14 @@ Arquivos de desenvolvimento ficam fora do ZIP:
 Depois de empacotar:
 
 ```bash
-unzip -l dist/brevo-leads-capture-0.1.0.zip
+unzip -l dist/crm-leads-capture-0.1.0.zip
 ```
 
 Confirme:
 
-- existe `brevo-leads-capture/brevo-leads-capture.php`;
-- existem `brevo-leads-capture/includes/`;
-- existem `brevo-leads-capture/docs/`;
+- existe `crm-leads-capture/crm-leads-capture.php`;
+- existem `crm-leads-capture/includes/`;
+- existem `crm-leads-capture/docs/`;
 - nao existem `tests/`, `.github/`, `.env`, `.npmrc`, `vendor/` ou logs.
 
 ## Smoke test de instalacao
@@ -111,8 +111,8 @@ Confirme:
 Em um WordPress de staging:
 
 1. Instale o ZIP pelo admin ou extraia em `wp-content/plugins/`.
-2. Ative `Brevo Leads Capture`.
-3. Abra `Configurações > Brevo Leads Capture`.
+2. Ative `CRM Leads Capture`.
+3. Abra `Configurações > CRM Leads Capture`.
 4. Configure API key e lista padrao com dados de teste.
 5. Execute um envio de material gratuito, se o tema estiver integrado.
 6. Execute um envio Elementor piloto.

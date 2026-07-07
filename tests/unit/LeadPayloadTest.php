@@ -2,17 +2,17 @@
 /**
  * Lead payload unit tests.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
-namespace BrevoLeadsCapture\Tests\Unit;
+namespace CRMLeadsCapture\Tests\Unit;
 
-use BrevoLeadsCapture\Tests\TestCase;
-use Brevo_Leads_Capture_Lead_Payload;
+use CRMLeadsCapture\Tests\TestCase;
+use CRM_Leads_Capture_Lead_Payload;
 
 class LeadPayloadTest extends TestCase {
 	public function test_builds_brevo_contact_payload(): void {
-		$builder = new Brevo_Leads_Capture_Lead_Payload();
+		$builder = new CRM_Leads_Capture_Lead_Payload();
 
 		$result = $builder->build_contact(
 			array(
@@ -46,7 +46,7 @@ class LeadPayloadTest extends TestCase {
 	}
 
 	public function test_rejects_invalid_email(): void {
-		$builder = new Brevo_Leads_Capture_Lead_Payload();
+		$builder = new CRM_Leads_Capture_Lead_Payload();
 
 		$result = $builder->build_contact(
 			array(
@@ -60,7 +60,7 @@ class LeadPayloadTest extends TestCase {
 	}
 
 	public function test_normalizes_brazilian_whatsapp_without_country_code(): void {
-		$builder = new Brevo_Leads_Capture_Lead_Payload();
+		$builder = new CRM_Leads_Capture_Lead_Payload();
 
 		$this->assertSame( '+5511999999999', $builder->normalize_whatsapp( '11999999999' ) );
 		$this->assertSame( '+5511999999999', $builder->normalize_whatsapp( '55 11 99999-9999' ) );
@@ -69,7 +69,7 @@ class LeadPayloadTest extends TestCase {
 	}
 
 	public function test_ignores_empty_and_invalid_list_ids(): void {
-		$builder = new Brevo_Leads_Capture_Lead_Payload();
+		$builder = new CRM_Leads_Capture_Lead_Payload();
 
 		$result = $builder->build_contact(
 			array(

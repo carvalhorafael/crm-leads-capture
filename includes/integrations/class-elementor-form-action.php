@@ -2,32 +2,32 @@
 /**
  * Elementor Pro form action adapter.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Brevo_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Forms\Classes\Action_Base {
-	private Brevo_Leads_Capture_Settings $settings;
+class CRM_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Forms\Classes\Action_Base {
+	private CRM_Leads_Capture_Settings $settings;
 
-	private Brevo_Leads_Capture_Elementor_Form_Mapper $mapper;
+	private CRM_Leads_Capture_Elementor_Form_Mapper $mapper;
 
-	private Brevo_Leads_Capture_Lead_Payload $payload_builder;
+	private CRM_Leads_Capture_Lead_Payload $payload_builder;
 
-	private Brevo_Leads_Capture_Logger $logger;
+	private CRM_Leads_Capture_Logger $logger;
 
 	public function __construct(
-		Brevo_Leads_Capture_Settings $settings,
-		Brevo_Leads_Capture_Elementor_Form_Mapper $mapper,
-		Brevo_Leads_Capture_Lead_Payload $payload_builder,
-		?Brevo_Leads_Capture_Logger $logger = null
+		CRM_Leads_Capture_Settings $settings,
+		CRM_Leads_Capture_Elementor_Form_Mapper $mapper,
+		CRM_Leads_Capture_Lead_Payload $payload_builder,
+		?CRM_Leads_Capture_Logger $logger = null
 	) {
 		$this->settings        = $settings;
 		$this->mapper          = $mapper;
 		$this->payload_builder = $payload_builder;
-		$this->logger          = $logger ?: new Brevo_Leads_Capture_Logger();
+		$this->logger          = $logger ?: new CRM_Leads_Capture_Logger();
 	}
 
 	public function get_name(): string {
@@ -35,7 +35,7 @@ class Brevo_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Fo
 	}
 
 	public function get_label(): string {
-		return esc_html__( 'Brevo CRM', 'brevo-leads-capture' );
+		return esc_html__( 'Brevo CRM', 'crm-leads-capture' );
 	}
 
 	/**
@@ -45,7 +45,7 @@ class Brevo_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Fo
 		$widget->start_controls_section(
 			'section_brevo',
 			array(
-				'label'     => esc_html__( 'Brevo CRM', 'brevo-leads-capture' ),
+				'label'     => esc_html__( 'Brevo CRM', 'crm-leads-capture' ),
 				'condition' => array(
 					'submit_actions' => $this->get_name(),
 				),
@@ -80,7 +80,7 @@ class Brevo_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Fo
 		$list_id = $this->list_id_for_settings( $settings );
 
 		if ( '' === $api_key || 0 >= $list_id ) {
-			$ajax_handler->add_error_message( esc_html__( 'Configuração Brevo incompleta.', 'brevo-leads-capture' ) );
+			$ajax_handler->add_error_message( esc_html__( 'Configuração Brevo incompleta.', 'crm-leads-capture' ) );
 			return;
 		}
 
@@ -96,19 +96,19 @@ class Brevo_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Fo
 
 		$payload_result = $this->payload_builder->build_contact( $mapped['input'], $mapped['context'] );
 		if ( ! $payload_result->is_successful() ) {
-			$ajax_handler->add_error_message( esc_html__( 'Email inválido.', 'brevo-leads-capture' ) );
+			$ajax_handler->add_error_message( esc_html__( 'Email inválido.', 'crm-leads-capture' ) );
 			return;
 		}
 
 		$payload = $payload_result->data()['payload'] ?? null;
 		if ( ! is_array( $payload ) ) {
-			$ajax_handler->add_error_message( esc_html__( 'Payload Brevo inválido.', 'brevo-leads-capture' ) );
+			$ajax_handler->add_error_message( esc_html__( 'Payload Brevo inválido.', 'crm-leads-capture' ) );
 			return;
 		}
 
-		$result = ( new Brevo_Leads_Capture_Brevo_Client( $api_key ) )->create_or_update_contact( $payload );
+		$result = ( new CRM_Leads_Capture_Brevo_Client( $api_key ) )->create_or_update_contact( $payload );
 		if ( $result->is_successful() ) {
-			$ajax_handler->add_success_message( esc_html__( 'Contato adicionado ao Brevo.', 'brevo-leads-capture' ) );
+			$ajax_handler->add_success_message( esc_html__( 'Contato adicionado ao Brevo.', 'crm-leads-capture' ) );
 			return;
 		}
 
@@ -121,7 +121,7 @@ class Brevo_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Fo
 			)
 		);
 
-		$ajax_handler->add_error_message( esc_html__( 'Erro ao adicionar contato ao Brevo. Tente novamente.', 'brevo-leads-capture' ) );
+		$ajax_handler->add_error_message( esc_html__( 'Erro ao adicionar contato ao Brevo. Tente novamente.', 'crm-leads-capture' ) );
 	}
 
 	/**
@@ -183,7 +183,7 @@ class Brevo_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Fo
 	/**
 	 * @return array<string, mixed>
 	 */
-	private function brevo_error_summary( Brevo_Leads_Capture_Result $result ): array {
+	private function brevo_error_summary( CRM_Leads_Capture_Result $result ): array {
 		$data = $result->data();
 
 		if ( isset( $data['error_summary'] ) && is_array( $data['error_summary'] ) ) {

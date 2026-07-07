@@ -2,12 +2,12 @@
 /**
  * Unit test smoke check.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
-namespace BrevoLeadsCapture\Tests\Unit;
+namespace CRMLeadsCapture\Tests\Unit;
 
-use BrevoLeadsCapture\Tests\TestCase;
+use CRMLeadsCapture\Tests\TestCase;
 
 class SanityTest extends TestCase {
 	public function test_unit_test_suite_is_configured(): void {

@@ -2,34 +2,40 @@
 /**
  * Main plugin bootstrap.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Brevo_Leads_Capture_Plugin {
-	private static ?Brevo_Leads_Capture_Plugin $instance = null;
+class CRM_Leads_Capture_Plugin {
+	private static ?CRM_Leads_Capture_Plugin $instance = null;
 
 	private bool $booted = false;
 
-	private Brevo_Leads_Capture_Settings $settings;
+	private CRM_Leads_Capture_Settings $settings;
 
-	private Brevo_Leads_Capture_Free_Material_Capture $free_material_capture;
+	private CRM_Leads_Capture_Provider_Registry $providers;
 
-	private Brevo_Leads_Capture_GitHub_Updater $github_updater;
+	private CRM_Leads_Capture_Free_Material_Capture $free_material_capture;
 
-	private Brevo_Leads_Capture_Logger $logger;
+	private CRM_Leads_Capture_GitHub_Updater $github_updater;
+
+	private CRM_Leads_Capture_Logger $logger;
 
 	private function __construct() {
-		$this->logger                = new Brevo_Leads_Capture_Logger();
-		$this->settings              = new Brevo_Leads_Capture_Settings();
-		$this->free_material_capture = new Brevo_Leads_Capture_Free_Material_Capture( $this->settings, null, null, $this->logger );
-		$this->github_updater        = new Brevo_Leads_Capture_GitHub_Updater( BREVO_LEADS_CAPTURE_FILE, BREVO_LEADS_CAPTURE_VERSION );
+		$this->logger    = new CRM_Leads_Capture_Logger();
+		$this->settings  = new CRM_Leads_Capture_Settings();
+		$this->providers = new CRM_Leads_Capture_Provider_Registry();
+		$this->providers->register( new CRM_Leads_Capture_Brevo_Provider( $this->settings ) );
+		$this->providers->register( new CRM_Leads_Capture_RD_Station_Provider( $this->settings ) );
+
+		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
+		$this->github_updater        = new CRM_Leads_Capture_GitHub_Updater( CRM_LEADS_CAPTURE_FILE, CRM_LEADS_CAPTURE_VERSION );
 	}
 
-	public static function instance(): Brevo_Leads_Capture_Plugin {
+	public static function instance(): CRM_Leads_Capture_Plugin {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -53,25 +59,29 @@ class Brevo_Leads_Capture_Plugin {
 
 	public function load_textdomain(): void {
 		load_plugin_textdomain(
-			'brevo-leads-capture',
+			'crm-leads-capture',
 			false,
-			dirname( BREVO_LEADS_CAPTURE_BASENAME ) . '/languages'
+			dirname( CRM_LEADS_CAPTURE_BASENAME ) . '/languages'
 		);
 	}
 
-	public function settings(): Brevo_Leads_Capture_Settings {
+	public function settings(): CRM_Leads_Capture_Settings {
 		return $this->settings;
 	}
 
-	public function free_material_capture(): Brevo_Leads_Capture_Free_Material_Capture {
+	public function free_material_capture(): CRM_Leads_Capture_Free_Material_Capture {
 		return $this->free_material_capture;
 	}
 
-	public function logger(): Brevo_Leads_Capture_Logger {
+	public function logger(): CRM_Leads_Capture_Logger {
 		return $this->logger;
 	}
 
-	public function github_updater(): Brevo_Leads_Capture_GitHub_Updater {
+	public function providers(): CRM_Leads_Capture_Provider_Registry {
+		return $this->providers;
+	}
+
+	public function github_updater(): CRM_Leads_Capture_GitHub_Updater {
 		return $this->github_updater;
 	}
 
@@ -83,14 +93,14 @@ class Brevo_Leads_Capture_Plugin {
 			return;
 		}
 
-		require_once BREVO_LEADS_CAPTURE_DIR . 'includes/integrations/class-elementor-form-action.php';
+		require_once CRM_LEADS_CAPTURE_DIR . 'includes/integrations/class-elementor-form-action.php';
 
 		if ( method_exists( $form_actions_registrar, 'register' ) ) {
 			$form_actions_registrar->register(
-				new Brevo_Leads_Capture_Elementor_Form_Action(
+				new CRM_Leads_Capture_Elementor_Form_Action(
 					$this->settings,
-					new Brevo_Leads_Capture_Elementor_Form_Mapper(),
-					new Brevo_Leads_Capture_Lead_Payload()
+					new CRM_Leads_Capture_Elementor_Form_Mapper(),
+					new CRM_Leads_Capture_Lead_Payload()
 				)
 			);
 		}

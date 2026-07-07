@@ -2,19 +2,19 @@
 /**
  * GitHub Releases update checker.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Brevo_Leads_Capture_GitHub_Updater {
-	private const API_URL = 'https://api.github.com/repos/carvalhorafael/brevo-leads-capture/releases/latest';
+class CRM_Leads_Capture_GitHub_Updater {
+	private const API_URL = 'https://api.github.com/repos/carvalhorafael/crm-leads-capture/releases/latest';
 
-	private const REPOSITORY_URL = 'https://github.com/carvalhorafael/brevo-leads-capture';
+	private const REPOSITORY_URL = 'https://github.com/carvalhorafael/crm-leads-capture';
 
-	private const CACHE_KEY = 'brevo_leads_capture_github_release';
+	private const CACHE_KEY = 'crm_leads_capture_github_release';
 
 	private string $plugin_basename;
 
@@ -92,7 +92,7 @@ class Brevo_Leads_Capture_GitHub_Updater {
 		}
 
 		return (object) array(
-			'name'          => 'Brevo Leads Capture',
+			'name'          => 'CRM Leads Capture',
 			'slug'          => $this->plugin_slug(),
 			'version'       => $release['version'],
 			'author'        => 'Rafael Carvalho',
@@ -100,7 +100,7 @@ class Brevo_Leads_Capture_GitHub_Updater {
 			'download_link' => $release['package_url'],
 			'last_updated'  => $release['published_at'],
 			'sections'      => array(
-				'description' => 'Centraliza capturas de leads WordPress e envio de contatos para o Brevo CRM.',
+				'description' => 'Centraliza capturas de leads WordPress e envio para CRMs.',
 				'changelog'   => $release['body'],
 			),
 		);
@@ -146,7 +146,7 @@ class Brevo_Leads_Capture_GitHub_Updater {
 			'timeout' => 8,
 			'headers' => array(
 				'Accept'     => 'application/vnd.github+json',
-				'User-Agent' => 'brevo-leads-capture/' . $this->current_version,
+				'User-Agent' => 'crm-leads-capture/' . $this->current_version,
 			),
 		);
 
@@ -196,7 +196,7 @@ class Brevo_Leads_Capture_GitHub_Updater {
 			return '';
 		}
 
-		$expected_name = sprintf( 'brevo-leads-capture-%s.zip', $version );
+		$expected_name = sprintf( 'crm-leads-capture-%s.zip', $version );
 		foreach ( $assets as $asset ) {
 			if ( ! is_array( $asset ) ) {
 				continue;

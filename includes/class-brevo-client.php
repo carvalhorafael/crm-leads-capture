@@ -2,14 +2,14 @@
 /**
  * Brevo HTTP API client.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Brevo_Leads_Capture_Brevo_Client {
+class CRM_Leads_Capture_Brevo_Client {
 	private const CONTACTS_ENDPOINT = 'https://api.brevo.com/v3/contacts';
 
 	private string $api_key;
@@ -33,19 +33,19 @@ class Brevo_Leads_Capture_Brevo_Client {
 	/**
 	 * @param array<string, mixed> $lead
 	 */
-	public function create_or_update_contact( array $lead ): Brevo_Leads_Capture_Result {
+	public function create_or_update_contact( array $lead ): CRM_Leads_Capture_Result {
 		if ( '' === $this->api_key ) {
-			return Brevo_Leads_Capture_Result::failure( 0, 'Brevo API key is not configured.' );
+			return CRM_Leads_Capture_Result::failure( 0, 'Brevo API key is not configured.' );
 		}
 
 		if ( empty( $lead['email'] ) || ! is_string( $lead['email'] ) ) {
-			return Brevo_Leads_Capture_Result::failure( 0, 'Brevo contact payload requires an email.' );
+			return CRM_Leads_Capture_Result::failure( 0, 'Brevo contact payload requires an email.' );
 		}
 
 		$response = $this->post( $lead );
 
 		if ( $this->is_wp_error( $response ) ) {
-			return Brevo_Leads_Capture_Result::failure( 0, 'Brevo request failed.' );
+			return CRM_Leads_Capture_Result::failure( 0, 'Brevo request failed.' );
 		}
 
 		$status_code = $this->response_code( $response );
@@ -53,14 +53,14 @@ class Brevo_Leads_Capture_Brevo_Client {
 		$decoded     = $this->decode_json_body( $body );
 
 		if ( in_array( $status_code, array( 200, 201, 204 ), true ) ) {
-			return Brevo_Leads_Capture_Result::success(
+			return CRM_Leads_Capture_Result::success(
 				$status_code,
 				'Brevo contact created or updated.',
 				array( 'body' => $decoded )
 			);
 		}
 
-		return Brevo_Leads_Capture_Result::failure(
+		return CRM_Leads_Capture_Result::failure(
 			$status_code,
 			'Brevo request returned an error.',
 			array(

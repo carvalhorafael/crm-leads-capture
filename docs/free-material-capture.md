@@ -19,18 +19,18 @@ method="post"
 Campo `action`:
 
 ```html
-<input type="hidden" name="action" value="brevo_leads_capture_free_material">
+<input type="hidden" name="action" value="crm_leads_capture_free_material">
 ```
 
 ## Campos esperados
 
-- `action`: `brevo_leads_capture_free_material`
-- `_wpnonce`: nonce para a action `brevo_leads_capture_free_material`
+- `action`: `crm_leads_capture_free_material`
+- `_wpnonce`: nonce para a action `crm_leads_capture_free_material`
 - `material_id`: ID do post/material
 - `name`: nome do lead
 - `email`: email do lead
 - `whatsapp`: WhatsApp do lead
-- `brevo_leads_capture_website`: honeypot, deve ficar vazio
+- `crm_leads_capture_website`: honeypot, deve ficar vazio
 - `utm_source`: opcional
 - `utm_medium`: opcional
 - `utm_campaign`: opcional
@@ -42,25 +42,25 @@ Campo `action`:
 Use a action:
 
 ```php
-brevo_leads_capture_free_material
+crm_leads_capture_free_material
 ```
 
 Exemplo:
 
 ```php
-wp_nonce_field( 'brevo_leads_capture_free_material' );
+wp_nonce_field( 'crm_leads_capture_free_material' );
 ```
 
 ## Metadados do material
 
 O plugin lê os seguintes metadados:
 
-- `_brevo_leads_capture_list_id`: ID da lista Brevo.
-- `_brevo_leads_capture_delivery_url`: URL de entrega após captura bem-sucedida. Pode ser uma URL externa quando o material deve levar para outro domínio.
+- `_crm_leads_capture_list_id`: ID da lista Brevo.
+- `_crm_leads_capture_delivery_url`: URL de entrega após captura bem-sucedida. Pode ser uma URL externa quando o material deve levar para outro domínio.
 
 Fallback temporário para compatibilidade com o tema:
 
-- `_executive_signal_material_capture_url`: usado como URL de entrega quando `_brevo_leads_capture_delivery_url` não está preenchido.
+- `_executive_signal_material_capture_url`: usado como URL de entrega quando `_crm_leads_capture_delivery_url` não está preenchido.
 
 ## Fluxo
 
@@ -96,8 +96,8 @@ DDI automaticamente.
 Em falha, o plugin não expõe resposta bruta da Brevo nem chaves de API. O redirecionamento adiciona:
 
 ```text
-brevo_leads_capture=error
-brevo_error=<codigo-controlado>
+crm_leads_capture=error
+crm_error=<codigo-controlado>
 ```
 
 Códigos internos possíveis:
@@ -118,24 +118,24 @@ Códigos internos possíveis:
 - `brevo_error`
 
 As mensagens exibidas ao usuário para esses códigos são configuráveis em
-`Configurações > Brevo Leads Capture`, na seção `Mensagens para usuários`.
+`Configurações > CRM Leads Capture`, na seção `Mensagens para usuários`.
 A mensagem de sucesso também é configurável nessa seção. Campos vazios voltam
 ao texto padrão do plugin.
 
 Para renderizar a mensagem perto do formulário em um template PHP, use:
 
 ```php
-<?php brevo_leads_capture_render_free_material_error_message(); ?>
+<?php crm_leads_capture_render_free_material_error_message(); ?>
 ```
 
 Ou o shortcode:
 
 ```text
-[brevo_leads_capture_error]
+[crm_leads_capture_error]
 ```
 
-O helper lê apenas os query args controlados `brevo_leads_capture=error` e
-`brevo_error=<codigo-controlado>`, resolve o texto configurado e escapa a saída.
+O helper lê apenas os query args controlados `crm_leads_capture=error` e
+`crm_error=<codigo-controlado>`, resolve o texto configurado e escapa a saída.
 O markup segue o padrão `OperationalFeedback` do Executive Signal Design System,
 com `es-operational-feedback`, badge `es-badge` e
 `data-feedback-tone="danger"`.
@@ -145,13 +145,13 @@ com `es-operational-feedback`, badge `es-badge` e
 Além do fallback por `admin-post.php`, o plugin registra:
 
 ```text
-POST /wp-json/brevo-leads-capture/v1/free-material
-GET /wp-json/brevo-leads-capture/v1/free-material/nonce
+POST /wp-json/crm-leads-capture/v1/free-material
+GET /wp-json/crm-leads-capture/v1/free-material/nonce
 ```
 
 Antes do POST, o JavaScript chama a rota `nonce` sem cookies e com cache
 desabilitado para obter um nonce fresco. No envio REST, esse valor é enviado em
-`brevo_leads_capture_nonce`, não em `_wpnonce`, porque o WordPress reserva
+`crm_leads_capture_nonce`, não em `_wpnonce`, porque o WordPress reserva
 `_wpnonce` em requisições REST para a verificação nativa `wp_rest`. Isso evita
 falhas quando o HTML do formulário foi servido por cache com um nonce antigo e
 também evita que a REST API bloqueie a chamada antes do handler do plugin.
@@ -185,7 +185,7 @@ configuração obrigatória ausente, sempre com payload público:
 ```
 
 O JavaScript do plugin intercepta formulários de material gratuito, chama esse
-endpoint e exibe `message` no container `data-brevo-leads-capture-message`.
+endpoint e exibe `message` no container `data-crm-leads-capture-message`.
 Quando precisa criar o container, usa o mesmo markup `OperationalFeedback` de
 feedback, com `success` para captura concluída e `danger` para erro.
 O script também envia o POST sem cookies. Como esse endpoint é público e já
@@ -195,7 +195,7 @@ do plugin. Sem JavaScript, o formulário continua funcionando pelo redirect
 documentado.
 
 Depois de exibir uma mensagem vinda do fallback com redirect, o script remove
-`brevo_leads_capture` e `brevo_error` da URL com `history.replaceState()`, para
+`crm_leads_capture` e `crm_error` da URL com `history.replaceState()`, para
 que a mensagem não reapareça apenas por atualizar a página.
 
 ## Diagnóstico local de erro Brevo
@@ -203,7 +203,7 @@ que a mensagem não reapareça apenas por atualizar a página.
 Quando `WP_DEBUG` está ativo, falhas da API Brevo são registradas com prefixo:
 
 ```text
-[brevo-leads-capture] Free material Brevo request failed.
+[crm-leads-capture] Free material Brevo request failed.
 ```
 
 O log inclui `material_id`, `list_id`, `status_code`, um resumo do payload
@@ -224,7 +224,7 @@ Se `WP_DEBUG_LOG` não estiver ativo, reproduza a submissão pelo WP-CLI para
 forçar a execução do handler e imprimir apenas o resultado controlado:
 
 ```bash
-npx wp-env run cli -- wp eval '$settings = new Brevo_Leads_Capture_Settings(); $capture = new Brevo_Leads_Capture_Free_Material_Capture($settings); $result = $capture->process_submission(array("_wpnonce"=>wp_create_nonce("brevo_leads_capture_free_material"),"material_id"=>487,"name"=>"Codex Test","email"=>"codex-test@example.com","whatsapp"=>"11999999999")); echo wp_json_encode(array("success"=>$result->is_successful(),"status"=>$result->status_code(),"data"=>$result->data()));'
+npx wp-env run cli -- wp eval '$settings = new CRM_Leads_Capture_Settings(); $capture = new CRM_Leads_Capture_Free_Material_Capture($settings); $result = $capture->process_submission(array("_wpnonce"=>wp_create_nonce("crm_leads_capture_free_material"),"material_id"=>487,"name"=>"Codex Test","email"=>"codex-test@example.com","whatsapp"=>"11999999999")); echo wp_json_encode(array("success"=>$result->is_successful(),"status"=>$result->status_code(),"data"=>$result->data()));'
 ```
 
 Para HTTP 400, confira no painel da Brevo se:

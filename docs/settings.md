@@ -7,7 +7,7 @@ O plugin usa configurações globais para dados compartilhados por todas as orig
 A página fica em:
 
 ```text
-Configurações > Brevo Leads Capture
+Configurações > CRM Leads Capture
 ```
 
 Campos disponíveis:
@@ -21,13 +21,13 @@ Campos disponíveis:
 As constantes têm prioridade sobre os valores salvos no banco:
 
 ```php
-define( 'BREVO_LEADS_CAPTURE_API_KEY', 'sua-chave' );
-define( 'BREVO_LEADS_CAPTURE_DEFAULT_LIST_ID', 123 );
+define( 'CRM_LEADS_CAPTURE_BREVO_API_KEY', 'sua-chave' );
+define( 'CRM_LEADS_CAPTURE_BREVO_DEFAULT_LIST_ID', 123 );
 ```
 
-Quando `BREVO_LEADS_CAPTURE_API_KEY` está definida, o campo de API key no admin fica desabilitado.
+Quando `CRM_LEADS_CAPTURE_BREVO_API_KEY` está definida, o campo de API key no admin fica desabilitado.
 
-Quando `BREVO_LEADS_CAPTURE_DEFAULT_LIST_ID` está definida, o campo de lista padrão no admin fica desabilitado.
+Quando `CRM_LEADS_CAPTURE_BREVO_DEFAULT_LIST_ID` está definida, o campo de lista padrão no admin fica desabilitado.
 
 ## Mensagens para usuários
 
@@ -45,7 +45,7 @@ classificadas.
 
 Não versione chaves reais em arquivos do projeto.
 
-Para ambientes de produção, prefira definir `BREVO_LEADS_CAPTURE_API_KEY` no `wp-config.php` ou em mecanismo seguro de configuração do ambiente.
+Para ambientes de produção, prefira definir `CRM_LEADS_CAPTURE_BREVO_API_KEY` no `wp-config.php` ou em mecanismo seguro de configuração do ambiente.
 
 Se a API key for salva pelo admin, ela fica armazenada no banco de dados do WordPress. O campo não exibe o valor salvo; deixar o campo em branco mantém a chave existente.
 
@@ -54,7 +54,7 @@ Se a API key for salva pelo admin, ela fica armazenada no banco de dados do Word
 Para cada material gratuito, o plugin tenta usar primeiro o metadado:
 
 ```text
-_brevo_leads_capture_list_id
+_crm_leads_capture_list_id
 ```
 
 Se esse metadado estiver vazio, o plugin usa a lista padrão global.
