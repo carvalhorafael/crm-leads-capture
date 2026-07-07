@@ -1,7 +1,7 @@
 # Migracao controlada dos formularios Elementor reais
 
 Este documento define como migrar formularios Elementor Pro que usam o plugin
-antigo `elementor-form-brevo-action` para `brevo-leads-capture`.
+antigo `elementor-form-brevo-action` para `crm-leads-capture`.
 
 O objetivo nao e trocar todos os formularios de uma vez. A migracao deve ser
 feita por inventario, formulario piloto, janela controlada, evidencia e
@@ -63,10 +63,10 @@ maior volume para depois de pelo menos um ciclo bem-sucedido.
 
 Antes de qualquer teste em producao:
 
-1. Instale e ative `brevo-leads-capture`.
-2. Configure `BREVO_LEADS_CAPTURE_API_KEY` no ambiente ou salve a API key no
+1. Instale e ative `crm-leads-capture`.
+2. Configure `CRM_LEADS_CAPTURE_BREVO_API_KEY` no ambiente ou salve a API key no
    admin do plugin.
-3. Configure `BREVO_LEADS_CAPTURE_DEFAULT_LIST_ID` somente se houver uma lista
+3. Configure `CRM_LEADS_CAPTURE_BREVO_DEFAULT_LIST_ID` somente se houver uma lista
    padrao segura para formularios sem `brevo_list_id`.
 4. Confirme que Elementor Pro esta ativo.
 5. Confirme que `WP_DEBUG` nao esta expondo logs em tela publica.
@@ -123,7 +123,7 @@ Se uma pagina usa script legado para preencher UTMs, teste pelo menos um envio
 com query string real:
 
 ```text
-?utm_source=teste&utm_medium=migracao&utm_campaign=brevo-leads-capture
+?utm_source=teste&utm_medium=migracao&utm_campaign=crm-leads-capture
 ```
 
 ## Evidencia minima

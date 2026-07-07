@@ -15,7 +15,7 @@
 	<coverage processUncoveredFiles="true">
 		<include>
 			<directory suffix=".php">includes</directory>
-			<file>brevo-leads-capture.php</file>
+			<file>crm-leads-capture.php</file>
 		</include>
 	</coverage>
 </phpunit>

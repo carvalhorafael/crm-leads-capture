@@ -2,14 +2,14 @@
 /**
  * Lead payload normalization for Brevo contacts.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Brevo_Leads_Capture_Lead_Payload {
+class CRM_Leads_Capture_Lead_Payload {
 	private const UTM_FIELDS = array(
 		'utm_source'   => 'UTM_SOURCE',
 		'utm_medium'   => 'UTM_MEDIUM',
@@ -23,11 +23,11 @@ class Brevo_Leads_Capture_Lead_Payload {
 	 * @param array<string, mixed> $input
 	 * @param array<string, mixed> $context
 	 */
-	public function build_contact( array $input, array $context = array() ): Brevo_Leads_Capture_Result {
+	public function build_contact( array $input, array $context = array() ): CRM_Leads_Capture_Result {
 		$email = $this->normalize_email( $input['email'] ?? '' );
 
 		if ( ! $this->is_valid_email( $email ) ) {
-			return Brevo_Leads_Capture_Result::failure( 0, 'Invalid email.' );
+			return CRM_Leads_Capture_Result::failure( 0, 'Invalid email.' );
 		}
 
 		$name_parts = $this->split_name( $this->clean_string( $input['name'] ?? '' ) );
@@ -68,7 +68,7 @@ class Brevo_Leads_Capture_Lead_Payload {
 			$payload['listIds'] = $list_ids;
 		}
 
-		return Brevo_Leads_Capture_Result::success( 0, 'Payload built.', array( 'payload' => $payload ) );
+		return CRM_Leads_Capture_Result::success( 0, 'Payload built.', array( 'payload' => $payload ) );
 	}
 
 	/**

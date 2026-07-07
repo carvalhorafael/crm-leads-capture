@@ -1,4 +1,4 @@
-.brevo-leads-capture-message {
+.crm-leads-capture-message {
 	box-sizing: border-box;
 	width: 100%;
 	margin: 0 0 1rem;
@@ -9,13 +9,13 @@
 	color: var(--es-text-primary, #edf2f7);
 }
 
-.brevo-leads-capture-message.es-operational-feedback {
+.crm-leads-capture-message.es-operational-feedback {
 	display: flex;
 	flex-direction: column;
 	gap: 0.5rem;
 }
 
-.brevo-leads-capture-message .es-badge {
+.crm-leads-capture-message .es-badge {
 	display: inline-flex;
 	width: fit-content;
 	min-height: 1.5rem;
@@ -32,38 +32,38 @@
 	text-transform: uppercase;
 }
 
-.brevo-leads-capture-message[data-feedback-tone="success"] {
+.crm-leads-capture-message[data-feedback-tone="success"] {
 	border-color: color-mix(in srgb, var(--es-success, #7fbf91) 28%, transparent);
 	background: color-mix(in srgb, var(--es-success, #7fbf91) 9%, var(--es-panel-muted, #171c1d));
 }
 
-.brevo-leads-capture-message[data-feedback-tone="success"] .es-badge {
+.crm-leads-capture-message[data-feedback-tone="success"] .es-badge {
 	border-color: color-mix(in srgb, var(--es-success, #7fbf91) 24%, transparent);
 	background: color-mix(in srgb, var(--es-success, #7fbf91) 12%, transparent);
 	color: var(--es-success, #7fbf91);
 }
 
-.brevo-leads-capture-message .es-operational-feedback__message {
+.crm-leads-capture-message .es-operational-feedback__message {
 	margin: 0;
 	color: var(--es-text-primary, #edf2f7);
 	font-size: 0.875rem;
 	line-height: 1.6;
 }
 
-.brevo-leads-capture-message__action {
+.crm-leads-capture-message__action {
 	margin: 0;
 	font-size: 0.875rem;
 	line-height: 1.5;
 }
 
-.brevo-leads-capture-message__action a {
+.crm-leads-capture-message__action a {
 	color: var(--es-accent, #c9dd75);
 	font-weight: 700;
 	text-decoration: underline;
 	text-underline-offset: 0.18em;
 }
 
-.brevo-leads-capture-message[hidden],
-.brevo-leads-capture-message.es-operational-feedback[hidden] {
+.crm-leads-capture-message[hidden],
+.crm-leads-capture-message.es-operational-feedback[hidden] {
 	display: none;
 }

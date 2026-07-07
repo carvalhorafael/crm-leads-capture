@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAIN_FILE="${ROOT_DIR}/brevo-leads-capture.php"
+MAIN_FILE="${ROOT_DIR}/crm-leads-capture.php"
 CHANGELOG_FILE="${ROOT_DIR}/CHANGELOG.md"
 REQUESTED="${1:-patch}"
 
@@ -58,7 +58,7 @@ if (( next_major < current_major )) ||
 fi
 
 perl -0pi -e "s/(^[ \\t*]*Version:[ \\t]*)\\Q${current_version}\\E/\${1}${next_version}/m" "${MAIN_FILE}"
-perl -0pi -e "s/define\\( 'BREVO_LEADS_CAPTURE_VERSION', '\\Q${current_version}\\E' \\);/define( 'BREVO_LEADS_CAPTURE_VERSION', '${next_version}' );/" "${MAIN_FILE}"
+perl -0pi -e "s/define\\( 'CRM_LEADS_CAPTURE_VERSION', '\\Q${current_version}\\E' \\);/define( 'CRM_LEADS_CAPTURE_VERSION', '${next_version}' );/" "${MAIN_FILE}"
 
 if ! grep -q "^## ${next_version} " "${CHANGELOG_FILE}"; then
   tmp_file="$(mktemp)"

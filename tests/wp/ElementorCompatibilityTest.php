@@ -2,12 +2,12 @@
 /**
  * Elementor compatibility integration tests.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 class ElementorCompatibilityTest extends WP_UnitTestCase {
 	public function test_preserves_legacy_control_names(): void {
-		$controls = ( new Brevo_Leads_Capture_Elementor_Form_Mapper() )->controls();
+		$controls = ( new CRM_Leads_Capture_Elementor_Form_Mapper() )->controls();
 
 		foreach (
 			array(

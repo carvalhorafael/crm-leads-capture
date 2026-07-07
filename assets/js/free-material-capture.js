@@ -1,7 +1,7 @@
 (function () {
 	'use strict';
 
-	var config = window.BrevoLeadsCaptureFreeMaterial || {};
+	var config = window.CRMLeadsCaptureFreeMaterial || {};
 
 	if (!config.restUrl || !window.fetch || !window.FormData) {
 		return;
@@ -14,11 +14,18 @@
 
 		var url = new URL(window.location.href);
 
-		if (url.searchParams.get('brevo_leads_capture') !== 'error' && !url.searchParams.has('brevo_error')) {
+		if (
+			url.searchParams.get('crm_leads_capture') !== 'error' &&
+			url.searchParams.get('brevo_leads_capture') !== 'error' &&
+			!url.searchParams.has('crm_error') &&
+			!url.searchParams.has('brevo_error')
+		) {
 			return;
 		}
 
+		url.searchParams.delete('crm_leads_capture');
 		url.searchParams.delete('brevo_leads_capture');
+		url.searchParams.delete('crm_error');
 		url.searchParams.delete('brevo_error');
 		window.history.replaceState(window.history.state, document.title, url.toString());
 	}
@@ -26,18 +33,18 @@
 	function isCaptureForm(form) {
 		var action = form.querySelector('input[name="action"]');
 
-		return action && action.value === 'brevo_leads_capture_free_material';
+		return action && (action.value === 'crm_leads_capture_free_material' || action.value === 'brevo_leads_capture_free_material');
 	}
 
 	function findMessageContainer(form, createIfMissing) {
-		var container = form.querySelector('[data-brevo-leads-capture-message]');
+		var container = form.querySelector('[data-crm-leads-capture-message]');
 
 		if (container) {
 			return container;
 		}
 
 		if (form.parentElement) {
-			container = form.parentElement.querySelector('[data-brevo-leads-capture-message]');
+			container = form.parentElement.querySelector('[data-crm-leads-capture-message]');
 		}
 
 		if (container) {
@@ -49,13 +56,13 @@
 		}
 
 		container = document.createElement('div');
-		container.className = 'brevo-leads-capture-message es-panel es-operational-feedback';
-		container.setAttribute('data-brevo-leads-capture-message', '');
+		container.className = 'crm-leads-capture-message es-panel es-operational-feedback';
+		container.setAttribute('data-crm-leads-capture-message', '');
 		container.setAttribute('data-tone', 'muted');
 		container.setAttribute('data-padding', 'md');
 		container.setAttribute('role', 'alert');
 		container.setAttribute('aria-live', 'polite');
-		container.innerHTML = '<span class="es-badge"></span><p class="es-operational-feedback__message"></p><p class="brevo-leads-capture-message__action"></p>';
+		container.innerHTML = '<span class="es-badge"></span><p class="es-operational-feedback__message"></p><p class="crm-leads-capture-message__action"></p>';
 		form.insertBefore(container, form.firstChild);
 
 		return container;
@@ -64,7 +71,7 @@
 	function setFeedback(container, tone, label, message, redirectUrl) {
 		var badgeNode = container.querySelector('.es-badge');
 		var messageNode = container.querySelector('.es-operational-feedback__message');
-		var actionNode = container.querySelector('.brevo-leads-capture-message__action');
+		var actionNode = container.querySelector('.crm-leads-capture-message__action');
 
 		if (!messageNode) {
 			messageNode = container;
@@ -168,7 +175,7 @@
 			.then(function (data) {
 				if (data && data.nonce) {
 					formData.delete('_wpnonce');
-					formData.set('brevo_leads_capture_nonce', data.nonce);
+					formData.set('crm_leads_capture_nonce', data.nonce);
 				}
 
 				return formData;

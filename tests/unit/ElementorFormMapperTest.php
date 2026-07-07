@@ -2,18 +2,18 @@
 /**
  * Elementor form mapper unit tests.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
-namespace BrevoLeadsCapture\Tests\Unit;
+namespace CRMLeadsCapture\Tests\Unit;
 
-use BrevoLeadsCapture\Tests\TestCase;
-use Brevo_Leads_Capture_Elementor_Form_Mapper;
-use Brevo_Leads_Capture_Lead_Payload;
+use CRMLeadsCapture\Tests\TestCase;
+use CRM_Leads_Capture_Elementor_Form_Mapper;
+use CRM_Leads_Capture_Lead_Payload;
 
 class ElementorFormMapperTest extends TestCase {
 	public function test_maps_elementor_fields_to_payload_input_and_context(): void {
-		$mapper = new Brevo_Leads_Capture_Elementor_Form_Mapper();
+		$mapper = new CRM_Leads_Capture_Elementor_Form_Mapper();
 
 		$fields = $mapper->normalize_fields(
 			array(
@@ -41,7 +41,7 @@ class ElementorFormMapperTest extends TestCase {
 			$fields
 		);
 
-		$result  = ( new Brevo_Leads_Capture_Lead_Payload() )->build_contact( $mapped['input'], $mapped['context'] );
+		$result  = ( new CRM_Leads_Capture_Lead_Payload() )->build_contact( $mapped['input'], $mapped['context'] );
 		$payload = $result->data()['payload'];
 
 		$this->assertTrue( $result->is_successful() );
@@ -57,7 +57,7 @@ class ElementorFormMapperTest extends TestCase {
 	}
 
 	public function test_injects_posted_utm_fields_when_elementor_does_not_include_them(): void {
-		$mapper = new Brevo_Leads_Capture_Elementor_Form_Mapper();
+		$mapper = new CRM_Leads_Capture_Elementor_Form_Mapper();
 
 		$fields = $mapper->inject_posted_utm_fields(
 			array(),

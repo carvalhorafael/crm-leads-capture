@@ -2,17 +2,17 @@
 /**
  * Logger unit tests.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
-namespace BrevoLeadsCapture\Tests\Unit;
+namespace CRMLeadsCapture\Tests\Unit;
 
-use BrevoLeadsCapture\Tests\TestCase;
-use Brevo_Leads_Capture_Logger;
+use CRMLeadsCapture\Tests\TestCase;
+use CRM_Leads_Capture_Logger;
 
 class LoggerTest extends TestCase {
 	public function test_redacts_sensitive_context_values(): void {
-		$logger = new Brevo_Leads_Capture_Logger();
+		$logger = new CRM_Leads_Capture_Logger();
 
 		$context = $logger->redact_context(
 			array(

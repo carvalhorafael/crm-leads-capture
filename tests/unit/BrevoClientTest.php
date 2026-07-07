@@ -2,20 +2,20 @@
 /**
  * Brevo client unit tests.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
-namespace BrevoLeadsCapture\Tests\Unit;
+namespace CRMLeadsCapture\Tests\Unit;
 
-use BrevoLeadsCapture\Tests\TestCase;
-use Brevo_Leads_Capture_Brevo_Client;
+use CRMLeadsCapture\Tests\TestCase;
+use CRM_Leads_Capture_Brevo_Client;
 
 class BrevoClientTest extends TestCase {
 	public function test_posts_contact_payload_to_brevo(): void {
 		$captured_url  = null;
 		$captured_args = null;
 
-		$client = new Brevo_Leads_Capture_Brevo_Client(
+		$client = new CRM_Leads_Capture_Brevo_Client(
 			'test-api-key',
 			static function ( string $url, array $args ) use ( &$captured_url, &$captured_args ): array {
 				$captured_url  = $url;
@@ -46,7 +46,7 @@ class BrevoClientTest extends TestCase {
 	}
 
 	public function test_accepts_no_content_success(): void {
-		$client = new Brevo_Leads_Capture_Brevo_Client(
+		$client = new CRM_Leads_Capture_Brevo_Client(
 			'test-api-key',
 			static fn(): array => array(
 				'response' => array( 'code' => 204 ),
@@ -61,7 +61,7 @@ class BrevoClientTest extends TestCase {
 	}
 
 	public function test_returns_failure_without_exposing_api_key(): void {
-		$client = new Brevo_Leads_Capture_Brevo_Client(
+		$client = new CRM_Leads_Capture_Brevo_Client(
 			'secret-api-key',
 			static fn(): array => array(
 				'response' => array( 'code' => 400 ),
@@ -81,7 +81,7 @@ class BrevoClientTest extends TestCase {
 	}
 
 	public function test_requires_configured_api_key(): void {
-		$client = new Brevo_Leads_Capture_Brevo_Client( '' );
+		$client = new CRM_Leads_Capture_Brevo_Client( '' );
 
 		$result = $client->create_or_update_contact( array( 'email' => 'lead@example.com' ) );
 

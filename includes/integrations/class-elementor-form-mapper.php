@@ -2,46 +2,46 @@
 /**
  * Elementor form field mapper.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Brevo_Leads_Capture_Elementor_Form_Mapper {
+class CRM_Leads_Capture_Elementor_Form_Mapper {
 	/**
 	 * @return array<string, array<string, mixed>>
 	 */
 	public function controls(): array {
 		return array(
 			'brevo_api_key' => array(
-				'label'       => __( 'API Key', 'brevo-leads-capture' ),
+				'label'       => __( 'API Key', 'crm-leads-capture' ),
 				'placeholder' => 'xkeysib-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-				'description' => __( 'Opcional quando a API key global estiver configurada no plugin.', 'brevo-leads-capture' ),
+				'description' => __( 'Opcional quando a API key global estiver configurada no plugin.', 'crm-leads-capture' ),
 			),
 			'brevo_list_id' => array(
-				'label'       => __( 'List ID', 'brevo-leads-capture' ),
+				'label'       => __( 'List ID', 'crm-leads-capture' ),
 				'placeholder' => '2',
-				'description' => __( 'Opcional quando a lista padrão global estiver configurada no plugin.', 'brevo-leads-capture' ),
+				'description' => __( 'Opcional quando a lista padrão global estiver configurada no plugin.', 'crm-leads-capture' ),
 			),
 			'brevo_email_field' => array(
-				'label'       => __( 'Email Field ID', 'brevo-leads-capture' ),
+				'label'       => __( 'Email Field ID', 'crm-leads-capture' ),
 				'placeholder' => 'email',
 				'default'     => 'email',
 			),
 			'brevo_name_field' => array(
-				'label'       => __( 'Name Field ID', 'brevo-leads-capture' ),
+				'label'       => __( 'Name Field ID', 'crm-leads-capture' ),
 				'placeholder' => 'name',
 				'default'     => 'name',
 			),
 			'brevo_last_name_field' => array(
-				'label'       => __( 'Last Name Field ID', 'brevo-leads-capture' ),
+				'label'       => __( 'Last Name Field ID', 'crm-leads-capture' ),
 				'placeholder' => 'last_name',
 				'default'     => 'last_name',
 			),
 			'brevo_whatsapp_field' => array(
-				'label'       => __( 'WhatsApp Field ID', 'brevo-leads-capture' ),
+				'label'       => __( 'WhatsApp Field ID', 'crm-leads-capture' ),
 				'placeholder' => 'whatsapp',
 				'default'     => 'whatsapp',
 			),

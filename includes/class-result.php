@@ -2,14 +2,14 @@
 /**
  * Standardized operation result.
  *
- * @package Brevo_Leads_Capture
+ * @package CRM_Leads_Capture
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Brevo_Leads_Capture_Result {
+class CRM_Leads_Capture_Result {
 	private bool $success;
 
 	private int $status_code;
