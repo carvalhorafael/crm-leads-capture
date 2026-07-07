@@ -2,6 +2,11 @@
 
 Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
+## 0.3.0 - release
+
+- Corrige workflow de release para gerar e publicar o ZIP do plugin `crm-leads-capture`.
+- Prepara release com suporte multi-provider, configuracoes por abas e URL de entrega padrao.
+
 ## 0.2.0 - release
 
 - Preparacao de release.
