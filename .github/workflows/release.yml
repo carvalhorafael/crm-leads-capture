@@ -53,7 +53,7 @@ jobs:
       - name: Resolve release tag
         id: release
         run: |
-          header_version="$(sed -nE 's/^[[:space:]*]*Version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*$/\1/ip' brevo-leads-capture.php | head -n 1 | tr -d '\r')"
+          header_version="$(sed -nE 's/^[[:space:]*]*Version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*$/\1/ip' crm-leads-capture.php | head -n 1 | tr -d '\r')"
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             tag="${{ inputs.tag }}"
@@ -84,8 +84,8 @@ jobs:
 
       - name: Validate release version
         run: |
-          header_version="$(sed -nE 's/^[[:space:]*]*Version:[[:space:]]*([^[:space:]].*)$/\1/ip' brevo-leads-capture.php | head -n 1 | tr -d '\r')"
-          constant_version="$(sed -nE "s/^define\\( 'BREVO_LEADS_CAPTURE_VERSION', '([^']+)' \\);/\\1/p" brevo-leads-capture.php | head -n 1 | tr -d '\r')"
+          header_version="$(sed -nE 's/^[[:space:]*]*Version:[[:space:]]*([^[:space:]].*)$/\1/ip' crm-leads-capture.php | head -n 1 | tr -d '\r')"
+          constant_version="$(sed -nE "s/^define\\( 'CRM_LEADS_CAPTURE_VERSION', '([^']+)' \\);/\\1/p" crm-leads-capture.php | head -n 1 | tr -d '\r')"
 
           if [[ "${header_version}" != "${{ steps.release.outputs.version }}" ]]; then
             echo "Plugin header version ${header_version} does not match tag ${{ steps.release.outputs.tag }}." >&2
@@ -93,7 +93,7 @@ jobs:
           fi
 
           if [[ "${constant_version}" != "${{ steps.release.outputs.version }}" ]]; then
-            echo "BREVO_LEADS_CAPTURE_VERSION ${constant_version} does not match tag ${{ steps.release.outputs.tag }}." >&2
+            echo "CRM_LEADS_CAPTURE_VERSION ${constant_version} does not match tag ${{ steps.release.outputs.tag }}." >&2
             exit 1
           fi
 
@@ -132,10 +132,10 @@ jobs:
 
       - name: Verify package contents
         run: |
-          zip_file="dist/brevo-leads-capture-${{ steps.release.outputs.version }}.zip"
+          zip_file="dist/crm-leads-capture-${{ steps.release.outputs.version }}.zip"
           test -f "${zip_file}"
           unzip -l "${zip_file}" | tee package-files.txt
-          unzip -l "${zip_file}" | grep -q "brevo-leads-capture/brevo-leads-capture.php"
+          unzip -l "${zip_file}" | grep -q "crm-leads-capture/crm-leads-capture.php"
 
           if unzip -l "${zip_file}" | grep -E "(tests/|\\.github/|\\.gitignore|AGENTS\\.md|\\.env|\\.npmrc|vendor/|node_modules/|phpunit|debug\\.log|\\.sql|\\.sqlite|build/)" ; then
             echo "Package contains development or sensitive files." >&2
@@ -145,7 +145,7 @@ jobs:
       - name: Publish GitHub release
         run: |
           tag="${{ steps.release.outputs.tag }}"
-          zip_file="dist/brevo-leads-capture-${{ steps.release.outputs.version }}.zip"
+          zip_file="dist/crm-leads-capture-${{ steps.release.outputs.version }}.zip"
 
           if gh release view "${tag}" >/dev/null 2>&1; then
             gh release upload "${tag}" "${zip_file}" --clobber
