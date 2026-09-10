@@ -2,6 +2,13 @@
 
 Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
+## Nao publicado
+
+- Remove as classes do Executive Signal Design System (`es-panel`, `es-badge`,
+  `es-operational-feedback`) do feedback de captura de material gratuito. O
+  markup passa a usar classes neutras do proprio plugin e o CSS expoe custom
+  properties para o tema hospedeiro definir a identidade visual.
+
 ## 0.3.0 - release
 
 - Corrige workflow de release para gerar e publicar o ZIP do plugin `crm-leads-capture`.

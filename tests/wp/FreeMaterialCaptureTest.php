@@ -202,10 +202,15 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'Não foi possível concluir agora.', $this->capture->current_error_message() );
 		$markup = do_shortcode( '[crm_leads_capture_error]' );
-		$this->assertStringContainsString( 'es-operational-feedback', $markup );
+		$this->assertStringContainsString( 'crm-leads-capture-message__text', $markup );
 		$this->assertStringContainsString( 'data-feedback-tone="danger"', $markup );
-		$this->assertStringContainsString( 'es-badge', $markup );
+		$this->assertStringContainsString( 'crm-leads-capture-message__badge', $markup );
 		$this->assertStringContainsString( 'Não foi possível concluir agora.', $markup );
+
+		// The host theme owns the identity: no borrowed design system classes.
+		$this->assertStringNotContainsString( 'es-panel', $markup );
+		$this->assertStringNotContainsString( 'es-badge', $markup );
+		$this->assertStringNotContainsString( 'es-operational-feedback', $markup );
 
 		unset( $_GET['crm_leads_capture'], $_GET['brevo_error'] );
 	}
