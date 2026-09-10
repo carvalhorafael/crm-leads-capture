@@ -102,11 +102,22 @@ Ou usar o shortcode:
 [crm_leads_capture_error]
 ```
 
-O markup gerado segue o padrão `OperationalFeedback` do Executive Signal Design
-System: `es-panel es-operational-feedback`,
-`data-feedback-tone="danger"`, badge `es-badge` e mensagem
-`es-operational-feedback__message`. Também inclui
+O markup gerado é neutro e pertence ao próprio plugin: container
+`crm-leads-capture-message` com `data-feedback-tone="danger"` ou
+`"success"`, badge `crm-leads-capture-message__badge`, mensagem
+`crm-leads-capture-message__text` e, no enhancement em JavaScript, o link de
+entrega em `crm-leads-capture-message__action`. Também inclui
 `data-crm-leads-capture-message`, `role="alert"` e `aria-live="polite"`.
+
+A identidade visual pertence ao tema hospedeiro. O CSS do plugin traz apenas
+estrutura, e todas as cores saem de custom properties que o tema pode
+redefinir no escopo do container:
+
+```css
+--crm-leads-capture-accent
+--crm-leads-capture-surface
+--crm-leads-capture-radius
+```
 Quando não há erro na query string, o container é renderizado vazio e oculto
 para também servir ao enhancement em JavaScript.
 
