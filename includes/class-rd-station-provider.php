@@ -86,6 +86,10 @@ class CRM_Leads_Capture_RD_Station_Provider implements CRM_Leads_Capture_Provide
 				'traffic_value'         => $this->clean_string( $payload['utm_term'] ?? '' ),
 				'cf_material'           => $this->clean_string( $payload['material'] ?? '' ),
 				'cf_source'             => $this->clean_string( $payload['source'] ?? '' ),
+				// Lets the CRM reconstruct the path this person took on the
+				// site. Empty values are dropped by the filter below, so a
+				// visitor without analytics simply sends one field less.
+				'cf_amplitude_device_id' => $this->clean_string( $context['analytics_device_id'] ?? '' ),
 			),
 			static fn( $value ): bool => '' !== $value
 		);
