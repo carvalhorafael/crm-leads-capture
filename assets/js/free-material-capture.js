@@ -2,6 +2,7 @@
 	'use strict';
 
 	var config = window.CRMLeadsCaptureFreeMaterial || {};
+	var NONCE_UNAVAILABLE = 'crm-leads-capture:nonce-unavailable';
 
 	if (!config.restUrl || !window.fetch || !window.FormData) {
 		return;
@@ -189,28 +190,31 @@
 
 		return fetch(nonceUrl.toString(), {
 			method: 'GET',
-			credentials: 'omit',
+			credentials: 'same-origin',
 			cache: 'no-store',
 			headers: requestHeaders(),
 		})
 			.then(function (response) {
 				if (!response.ok) {
-					return {};
+					throw new Error(NONCE_UNAVAILABLE);
 				}
 
 				return response.json().catch(function () {
-					return {};
+					throw new Error(NONCE_UNAVAILABLE);
 				});
 			})
 			.then(function (data) {
-				if (data && data.nonce) {
-					formData.delete('_wpnonce');
-					formData.set('crm_leads_capture_nonce', data.nonce);
+				if (!data || !data.nonce) {
+					throw new Error(NONCE_UNAVAILABLE);
 				}
 
-				return formData;
-			})
-			.catch(function () {
+				// WordPress rejects any REST request carrying a _wpnonce it
+				// cannot verify against its own "wp_rest" action, before the
+				// plugin is ever reached. Ours belongs to another action, so it
+				// travels under a name of its own.
+				formData.delete('_wpnonce');
+				formData.set('crm_leads_capture_nonce', data.nonce);
+
 				return formData;
 			});
 	}
@@ -243,7 +247,7 @@
 				return fetch(config.restUrl, {
 					method: 'POST',
 					body: payload,
-					credentials: 'omit',
+					credentials: 'same-origin',
 					headers: requestHeaders(),
 				});
 			})
@@ -279,6 +283,15 @@
 				throw data || {};
 			})
 			.catch(function (data) {
+				if (data instanceof Error && data.message === NONCE_UNAVAILABLE) {
+					// The endpoint is unreachable: blocked, offline, or behind a
+					// gate this request cannot pass. The plain form post is the
+					// path that does not depend on any of it.
+					form.submit();
+
+					return;
+				}
+
 				announceResult(form, false, data);
 				setFeedback(
 					findMessageContainer(form, true),
