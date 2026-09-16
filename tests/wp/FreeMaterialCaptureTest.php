@@ -396,6 +396,106 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 	/**
 	 * @param array<string, string> $meta
 	 */
+	/**
+	 * The anonymous analytics identifier the host site's analytics assigned to
+	 * this browser has to reach the CRM, so the CRM can reconstruct the path
+	 * this person took on the site.
+	 */
+	public function test_analytics_device_id_is_forwarded_to_the_crm(): void {
+		$material_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'rd_station',
+			)
+		);
+
+		$this->capture->process_submission(
+			$this->valid_request( $material_id, array( 'analytics_device_id' => 'abc-123_XY.Z:0' ) )
+		);
+
+		$this->assertSame( 'abc-123_XY.Z:0', $this->provider->last_context['analytics_device_id'] ?? null );
+	}
+
+	/**
+	 * It is forwarded untouched otherwise, so it is treated as an opaque string
+	 * with a restricted charset and a capped length, never interpreted.
+	 */
+	public function test_analytics_device_id_is_sanitised(): void {
+		$material_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'rd_station',
+			)
+		);
+
+		$this->capture->process_submission(
+			$this->valid_request( $material_id, array( 'analytics_device_id' => '<script>a</script>b' ) )
+		);
+
+		$this->assertSame( 'scriptascriptb', $this->provider->last_context['analytics_device_id'] ?? null );
+
+		$this->capture->process_submission(
+			$this->valid_request( $material_id, array( 'analytics_device_id' => str_repeat( 'a', 200 ) ) )
+		);
+
+		$this->assertSame( 128, strlen( (string) ( $this->provider->last_context['analytics_device_id'] ?? '' ) ) );
+	}
+
+	/**
+	 * A visitor whose browser has no analytics must still become a lead.
+	 */
+	public function test_a_submission_without_the_identifier_still_succeeds(): void {
+		$material_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'rd_station',
+			)
+		);
+
+		$result = $this->capture->process_submission( $this->valid_request( $material_id ) );
+
+		$this->assertTrue( $result->is_successful() );
+		$this->assertSame( '', $this->provider->last_context['analytics_device_id'] ?? null );
+	}
+
+	/**
+	 * The other half of the chain: the provider is where the vendor specific
+	 * field name lives, so this asserts the body the CRM actually receives.
+	 */
+	public function test_the_rd_station_payload_carries_the_identifier(): void {
+		update_option(
+			'crm_leads_capture_settings',
+			array( 'providers' => array( 'rd_station' => array( 'api_key' => 'test-key' ) ) )
+		);
+
+		$bodies = array();
+		$spy    = static function ( $preempt, $parsed_args ) use ( &$bodies ) {
+			$bodies[] = json_decode( (string) ( $parsed_args['body'] ?? '' ), true );
+
+			return array(
+				'response' => array( 'code' => 200 ),
+				'body'     => '{}',
+			);
+		};
+
+		add_filter( 'pre_http_request', $spy, 10, 2 );
+
+		$provider = new CRM_Leads_Capture_RD_Station_Provider( crm_leads_capture()->settings() );
+		$lead     = array(
+			'email'    => 'lead@example.com',
+			'name'     => 'Lead Teste',
+			'material' => 'Material Teste',
+		);
+
+		$provider->send_lead( $lead, array( 'analytics_device_id' => 'abc-123' ) );
+
+		// Empty values are dropped, so a visitor without analytics sends one
+		// field less rather than an empty one.
+		$provider->send_lead( $lead, array() );
+
+		remove_filter( 'pre_http_request', $spy, 10 );
+
+		$this->assertSame( 'abc-123', $bodies[0]['payload']['cf_amplitude_device_id'] ?? null );
+		$this->assertArrayNotHasKey( 'cf_amplitude_device_id', $bodies[1]['payload'] ?? array() );
+	}
+
 	private function create_material( array $meta = array() ): int {
 		$post_id = self::factory()->post->create(
 			array(

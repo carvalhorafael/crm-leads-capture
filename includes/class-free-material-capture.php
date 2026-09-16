@@ -328,7 +328,7 @@ class CRM_Leads_Capture_Free_Material_Capture {
 
 		$provider_id = $this->material_provider_id( $material_id );
 		$provider    = $this->provider( $provider_id );
-		$context     = $this->provider_context( $material_id, $provider_id );
+		$context     = $this->provider_context( $material_id, $provider_id, $request );
 
 		if ( 'brevo' === $provider_id && empty( $context['list_id'] ) ) {
 			return $this->failure( 'missing_list', $material_id );
@@ -487,17 +487,35 @@ class CRM_Leads_Capture_Free_Material_Capture {
 	}
 
 	/**
+	 * @param array<string, mixed> $request Submitted fields.
 	 * @return array<string, mixed>
 	 */
-	private function provider_context( int $material_id, string $provider_id ): array {
+	private function provider_context( int $material_id, string $provider_id, array $request = array() ): array {
 		if ( 'rd_station' === $provider_id ) {
 			return array(
 				'conversion_identifier' => $this->clean_string( get_post_meta( $material_id, self::META_RD_STATION_CONVERSION_IDENTIFIER, true ) ),
 				'tags'                  => $this->clean_string( get_post_meta( $material_id, self::META_RD_STATION_TAGS, true ) ),
+				'analytics_device_id'   => $this->clean_analytics_device_id( $request['analytics_device_id'] ?? '' ),
 			);
 		}
 
 		return array( 'list_id' => $this->material_list_id( $material_id ) );
+	}
+
+	/**
+	 * Normalise the anonymous identifier the host site's analytics assigned to
+	 * this browser.
+	 *
+	 * It arrives from the client and is forwarded to the CRM untouched
+	 * otherwise, so the charset is restricted and the length capped. The plugin
+	 * never interprets it: it is an opaque string.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	private function clean_analytics_device_id( $value ): string {
+		$value = is_scalar( $value ) ? (string) $value : '';
+
+		return substr( (string) preg_replace( '/[^A-Za-z0-9._:-]/', '', $value ), 0, 128 );
 	}
 
 	private function material_label( int $material_id ): string {

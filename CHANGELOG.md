@@ -4,6 +4,15 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+## 0.6.0 - identificador de analise no CRM
+
+- Encaminha ao CRM o identificador anonimo de dispositivo que a analise do site
+  atribuiu ao navegador, pelo campo `analytics_device_id`. No RD Station ele
+  chega como `cf_amplitude_device_id`. Permite reconstruir no CRM o caminho que
+  a pessoa fez no site, sem enviar dado pessoal a ferramenta de analise. O
+  plugin trata o valor como string opaca: charset restrito, 128 caracteres, sem
+  interpretacao. Ausente, o lead e criado igual.
+
 ## 0.5.0 - resultado da captura observavel
 
 - Anuncia o resultado da captura no proprio formulario, como um CustomEvent
