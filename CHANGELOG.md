@@ -4,6 +4,8 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+## 0.5.0 - resultado da captura observavel
+
 - Anuncia o resultado da captura no proprio formulario, como um CustomEvent
   `crm-leads-capture:result` com `success`, `materialId` e `errorCode`. O envio
   e por fetch, entao sucesso e erro compartilham a mesma URL e nenhuma
