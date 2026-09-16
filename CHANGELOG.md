@@ -4,6 +4,12 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+- Anuncia o resultado da captura no proprio formulario, como um CustomEvent
+  `crm-leads-capture:result` com `success`, `materialId` e `errorCode`. O envio
+  e por fetch, entao sucesso e erro compartilham a mesma URL e nenhuma
+  ferramenta de analise conseguia distingui-los. O plugin nao sabe qual
+  ferramenta o site usa: quem escuta decide o que fazer.
+
 ## 0.4.0 - feedback de captura sem identidade herdada
 
 - Remove as classes do Executive Signal Design System (`es-panel`, `es-badge`,
