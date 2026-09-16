@@ -136,9 +136,10 @@ Ou o shortcode:
 
 O helper lê apenas os query args controlados `crm_leads_capture=error` e
 `crm_error=<codigo-controlado>`, resolve o texto configurado e escapa a saída.
-O markup segue o padrão `OperationalFeedback` do Executive Signal Design System,
-com `es-operational-feedback`, badge `es-badge` e
-`data-feedback-tone="danger"`.
+O markup usa as classes neutras do próprio plugin:
+`crm-leads-capture-message`, badge `crm-leads-capture-message__badge`,
+texto `crm-leads-capture-message__text` e `data-feedback-tone="danger"`.
+As cores saem de custom properties que o tema hospedeiro pode redefinir.
 
 ## Endpoint REST para JavaScript
 

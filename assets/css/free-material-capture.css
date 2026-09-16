@@ -1,51 +1,53 @@
-.crm-leads-capture-message {
-	box-sizing: border-box;
-	width: 100%;
-	margin: 0 0 1rem;
-	border: 1px solid color-mix(in srgb, var(--es-danger, #d76b7a) 28%, transparent);
-	border-radius: var(--es-radius-panel, 0.75rem);
-	background: color-mix(in srgb, var(--es-danger, #d76b7a) 9%, var(--es-panel-muted, #171c1d));
-	padding: 1rem;
-	color: var(--es-text-primary, #edf2f7);
-}
+/**
+ * Feedback styles for the free material capture form.
+ *
+ * The host theme owns the visual identity. Every colour here comes from a
+ * custom property the theme can redefine, and the defaults stay neutral
+ * instead of importing another product's palette.
+ */
 
-.crm-leads-capture-message.es-operational-feedback {
+.crm-leads-capture-message {
+	--crm-leads-capture-accent: #b42318;
+	--crm-leads-capture-surface: color-mix(in srgb, var(--crm-leads-capture-accent) 7%, #fff);
+	--crm-leads-capture-radius: 0.75rem;
+
+	box-sizing: border-box;
 	display: flex;
+	width: 100%;
 	flex-direction: column;
 	gap: 0.5rem;
+	margin: 0 0 1rem;
+	border: 1px solid color-mix(in srgb, var(--crm-leads-capture-accent) 34%, transparent);
+	border-radius: var(--crm-leads-capture-radius);
+	background: var(--crm-leads-capture-surface);
+	padding: 1rem;
+	color: inherit;
 }
 
-.crm-leads-capture-message .es-badge {
+.crm-leads-capture-message[data-feedback-tone="success"] {
+	--crm-leads-capture-accent: #12704a;
+}
+
+.crm-leads-capture-message__badge {
 	display: inline-flex;
 	width: fit-content;
 	min-height: 1.5rem;
 	align-items: center;
-	border: 1px solid color-mix(in srgb, var(--es-danger, #d76b7a) 24%, transparent);
-	border-radius: var(--es-radius-badge, 999px);
-	background: color-mix(in srgb, var(--es-danger, #d76b7a) 11%, transparent);
-	color: var(--es-danger, #d76b7a);
+	border: 1px solid color-mix(in srgb, var(--crm-leads-capture-accent) 30%, transparent);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--crm-leads-capture-accent) 12%, transparent);
+	color: var(--crm-leads-capture-accent);
 	padding: 0.25rem 0.625rem;
 	font-size: 0.6875rem;
-	font-weight: var(--es-font-weight-title, 700);
+	font-weight: 700;
 	line-height: 1;
-	letter-spacing: var(--es-letter-spacing-label, 0.08em);
+	letter-spacing: 0.08em;
 	text-transform: uppercase;
 }
 
-.crm-leads-capture-message[data-feedback-tone="success"] {
-	border-color: color-mix(in srgb, var(--es-success, #7fbf91) 28%, transparent);
-	background: color-mix(in srgb, var(--es-success, #7fbf91) 9%, var(--es-panel-muted, #171c1d));
-}
-
-.crm-leads-capture-message[data-feedback-tone="success"] .es-badge {
-	border-color: color-mix(in srgb, var(--es-success, #7fbf91) 24%, transparent);
-	background: color-mix(in srgb, var(--es-success, #7fbf91) 12%, transparent);
-	color: var(--es-success, #7fbf91);
-}
-
-.crm-leads-capture-message .es-operational-feedback__message {
+.crm-leads-capture-message__text {
 	margin: 0;
-	color: var(--es-text-primary, #edf2f7);
+	color: inherit;
 	font-size: 0.875rem;
 	line-height: 1.6;
 }
@@ -57,13 +59,12 @@
 }
 
 .crm-leads-capture-message__action a {
-	color: var(--es-accent, #c9dd75);
+	color: var(--crm-leads-capture-accent);
 	font-weight: 700;
 	text-decoration: underline;
 	text-underline-offset: 0.18em;
 }
 
-.crm-leads-capture-message[hidden],
-.crm-leads-capture-message.es-operational-feedback[hidden] {
+.crm-leads-capture-message[hidden] {
 	display: none;
 }

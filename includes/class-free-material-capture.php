@@ -664,10 +664,8 @@ class CRM_Leads_Capture_Free_Material_Capture {
 
 	private function error_message_markup( string $message ): string {
 		$attributes = array(
-			'class'                          => 'crm-leads-capture-message es-panel es-operational-feedback',
+			'class'                          => 'crm-leads-capture-message',
 			'data-crm-leads-capture-message' => '',
-			'data-tone'                      => 'muted',
-			'data-padding'                   => 'md',
 			'data-feedback-tone'             => 'danger',
 			'role'                           => 'alert',
 			'aria-live'                      => 'polite',
@@ -684,7 +682,7 @@ class CRM_Leads_Capture_Free_Material_Capture {
 				: ' ' . esc_attr( $name ) . '="' . esc_attr( $value ) . '"';
 		}
 
-		return '<div' . $attribute_html . '><span class="es-badge" data-tone="danger">' . esc_html__( 'Erro', 'crm-leads-capture' ) . '</span><p class="es-operational-feedback__message">' . esc_html( $message ) . '</p></div>';
+		return '<div' . $attribute_html . '><span class="crm-leads-capture-message__badge">' . esc_html__( 'Erro', 'crm-leads-capture' ) . '</span><p class="crm-leads-capture-message__text">' . esc_html( $message ) . '</p></div>';
 	}
 
 	private function redirect_host( string $redirect_url ): string {

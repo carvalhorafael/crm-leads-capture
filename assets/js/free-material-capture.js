@@ -56,21 +56,21 @@
 		}
 
 		container = document.createElement('div');
-		container.className = 'crm-leads-capture-message es-panel es-operational-feedback';
+		container.className = 'crm-leads-capture-message';
 		container.setAttribute('data-crm-leads-capture-message', '');
 		container.setAttribute('data-tone', 'muted');
 		container.setAttribute('data-padding', 'md');
 		container.setAttribute('role', 'alert');
 		container.setAttribute('aria-live', 'polite');
-		container.innerHTML = '<span class="es-badge"></span><p class="es-operational-feedback__message"></p><p class="crm-leads-capture-message__action"></p>';
+		container.innerHTML = '<span class="crm-leads-capture-message__badge"></span><p class="crm-leads-capture-message__text"></p><p class="crm-leads-capture-message__action"></p>';
 		form.insertBefore(container, form.firstChild);
 
 		return container;
 	}
 
 	function setFeedback(container, tone, label, message, redirectUrl) {
-		var badgeNode = container.querySelector('.es-badge');
-		var messageNode = container.querySelector('.es-operational-feedback__message');
+		var badgeNode = container.querySelector('.crm-leads-capture-message__badge');
+		var messageNode = container.querySelector('.crm-leads-capture-message__text');
 		var actionNode = container.querySelector('.crm-leads-capture-message__action');
 
 		if (!messageNode) {
@@ -79,7 +79,6 @@
 
 		container.setAttribute('data-feedback-tone', tone);
 		if (badgeNode) {
-			badgeNode.setAttribute('data-tone', tone);
 			badgeNode.textContent = label;
 		}
 
@@ -199,7 +198,7 @@
 
 		if (messageContainer) {
 			messageContainer.hidden = true;
-			var currentMessage = messageContainer.querySelector('.es-operational-feedback__message');
+			var currentMessage = messageContainer.querySelector('.crm-leads-capture-message__text');
 			if (currentMessage) {
 				currentMessage.textContent = '';
 			} else {

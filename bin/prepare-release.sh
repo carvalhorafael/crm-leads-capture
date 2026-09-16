@@ -62,14 +62,24 @@ perl -0pi -e "s/define\\( 'CRM_LEADS_CAPTURE_VERSION', '\\Q${current_version}\\E
 
 if ! grep -q "^## ${next_version} " "${CHANGELOG_FILE}"; then
   tmp_file="$(mktemp)"
+  # As entradas acumuladas em "Nao publicado" sao justamente o conteudo desta
+  # release, entao o cabecalho passa a nomea-las. Inserir uma secao acima delas
+  # publicava uma release descrita como "Preparacao de release" e deixava as
+  # mudancas reais marcadas como nao publicadas.
   awk -v version="${next_version}" '
-    BEGIN { inserted = 0 }
-    /^## / && inserted == 0 {
+    BEGIN { handled = 0 }
+    handled == 0 && /^## / {
+      handled = 1
+      if ($0 ~ /^##[ \t]+Nao publicado[ \t]*$/) {
+        print "## Nao publicado"
+        print ""
+        print "## " version " - release"
+        next
+      }
       print "## " version " - release"
       print ""
       print "- Preparacao de release."
       print ""
-      inserted = 1
     }
     { print }
   ' "${CHANGELOG_FILE}" > "${tmp_file}"
