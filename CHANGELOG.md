@@ -4,6 +4,19 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+## 0.6.1 - captura em site privado
+
+- Corrige a captura em sites que exigem login, onde as duas chamadas REST eram
+  recusadas com 403 e o visitante via "a sessao do formulario expirou" —
+  mensagem que pede justamente a unica acao que nao resolve. As chamadas
+  passam a enviar credenciais, e o `_wpnonce` da pagina nunca mais vai para o
+  REST, porque o WordPress recusa qualquer requisicao que carregue um nonce
+  que ele nao valide contra a propria acao `wp_rest`, antes de o plugin ser
+  alcancado.
+- Quando o endpoint do nonce esta indisponivel, o formulario volta a ser
+  enviado pelo POST comum em vez de seguir com um nonce que falharia. O lead
+  continua sendo criado e o material entregue.
+
 ## 0.6.0 - identificador de analise no CRM
 
 - Encaminha ao CRM o identificador anonimo de dispositivo que a analise do site
