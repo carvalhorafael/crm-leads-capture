@@ -125,6 +125,37 @@
 		return config.genericMessage;
 	}
 
+	/**
+	 * Announce the outcome on the form, for whoever is listening.
+	 *
+	 * The plugin knows whether the lead was created; it deliberately does not
+	 * know which analytics tool the host site runs. The host theme listens and
+	 * decides what to do with it.
+	 */
+	function announceResult(form, success, data) {
+		if (typeof window.CustomEvent !== 'function') {
+			return;
+		}
+
+		var materialField = form.querySelector('[name="material_id"]');
+		var detail = {
+			success: success,
+			materialId: materialField ? materialField.value : '',
+			errorCode: '',
+		};
+
+		if (!success) {
+			detail.errorCode = (data && (data.error_code || data.code)) || 'unknown';
+		}
+
+		form.dispatchEvent(
+			new window.CustomEvent('crm-leads-capture:result', {
+				bubbles: true,
+				detail: detail,
+			})
+		);
+	}
+
 	function clearFormFields(form) {
 		Array.prototype.forEach.call(form.elements, function (field) {
 			if (!field.name || field.type === 'hidden' || field.type === 'submit' || field.type === 'button') {
@@ -232,6 +263,7 @@
 			})
 			.then(function (data) {
 				if (data && data.success && data.redirect_url) {
+					announceResult(form, true, data);
 					clearFormFields(form);
 					setFeedback(
 						findMessageContainer(form, true),
@@ -247,6 +279,7 @@
 				throw data || {};
 			})
 			.catch(function (data) {
+				announceResult(form, false, data);
 				setFeedback(
 					findMessageContainer(form, true),
 					'danger',
