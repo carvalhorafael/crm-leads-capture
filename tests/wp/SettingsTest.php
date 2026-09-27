@@ -189,6 +189,19 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertSame( 'Tudo certo. Redirecionando para o material.', $this->settings->success_message() );
 	}
 
+	public function test_service_success_message_uses_custom_text_and_falls_back_to_default(): void {
+		$this->assertStringContainsString( 'analisar pessoalmente', $this->settings->service_success_message() );
+
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'service_success_message' => 'Recebemos o contexto da sua operação.',
+			)
+		);
+
+		$this->assertSame( 'Recebemos o contexto da sua operação.', $this->settings->service_success_message() );
+	}
+
 	public function test_default_delivery_url_uses_configured_value(): void {
 		update_option(
 			CRM_Leads_Capture_Settings::OPTION_SETTINGS,

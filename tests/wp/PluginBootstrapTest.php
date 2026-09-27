@@ -30,4 +30,10 @@ class PluginBootstrapTest extends WP_UnitTestCase {
 			has_action( 'elementor_pro/forms/actions/register', array( crm_leads_capture(), 'register_elementor_form_action' ) )
 		);
 	}
+
+	public function test_plugin_exposes_service_interest_capture(): void {
+		$this->assertInstanceOf( CRM_Leads_Capture_Service_Interest_Capture::class, crm_leads_capture()->service_interest_capture() );
+		$this->assertTrue( function_exists( 'crm_leads_capture_render_service_interest_message' ) );
+		$this->assertTrue( function_exists( 'crm_leads_capture_service_interest_nonce_field' ) );
+	}
 }

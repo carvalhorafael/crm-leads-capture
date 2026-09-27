@@ -71,6 +71,7 @@ class CRM_Leads_Capture_Settings {
 
 		add_settings_section( 'crm_leads_capture_messages_section', __( 'Messages', 'crm-leads-capture' ), array( $this, 'render_messages_section' ), $this->settings_tab_page( 'messages' ) );
 		add_settings_field( 'crm_leads_capture_success_message', __( 'Mensagem de sucesso', 'crm-leads-capture' ), array( $this, 'render_success_message_field' ), $this->settings_tab_page( 'messages' ), 'crm_leads_capture_messages_section', array( 'label_for' => 'crm_leads_capture_success_message' ) );
+		add_settings_field( 'crm_leads_capture_service_success_message', __( 'Mensagem de interesse em serviço', 'crm-leads-capture' ), array( $this, 'render_service_success_message_field' ), $this->settings_tab_page( 'messages' ), 'crm_leads_capture_messages_section', array( 'label_for' => 'crm_leads_capture_service_success_message' ) );
 		add_settings_field( 'crm_leads_capture_error_messages', __( 'Mensagens de erro', 'crm-leads-capture' ), array( $this, 'render_error_messages_field' ), $this->settings_tab_page( 'messages' ), 'crm_leads_capture_messages_section' );
 
 		add_settings_section( 'crm_leads_capture_rd_station_section', __( 'RD Station', 'crm-leads-capture' ), array( $this, 'render_rd_station_section' ), $this->settings_tab_page( 'rd_station' ) );
@@ -139,6 +140,7 @@ class CRM_Leads_Capture_Settings {
 			),
 			'error_messages'  => $this->sanitize_error_messages( $input['error_messages'] ?? ( $current['error_messages'] ?? array() ) ),
 			'success_message' => $this->clean_textarea( $input['success_message'] ?? ( $current['success_message'] ?? '' ) ),
+			'service_success_message' => $this->clean_textarea( $input['service_success_message'] ?? ( $current['service_success_message'] ?? '' ) ),
 			'default_delivery_url' => $this->clean_url( $input['default_delivery_url'] ?? ( $current['default_delivery_url'] ?? '' ) ),
 		);
 	}
@@ -221,6 +223,12 @@ class CRM_Leads_Capture_Settings {
 		$message = $this->option_string( 'success_message' );
 
 		return '' !== $message ? $message : __( 'Cadastro recebido. Você será redirecionado para a página do material em 5 segundos.', 'crm-leads-capture' );
+	}
+
+	public function service_success_message(): string {
+		$message = $this->option_string( 'service_success_message' );
+
+		return '' !== $message ? $message : __( 'Recebi seu contexto. Vou analisar pessoalmente as informações e entrarei em contato se houver aderência para uma conversa.', 'crm-leads-capture' );
 	}
 
 	public function default_delivery_url(): string {
@@ -370,6 +378,13 @@ class CRM_Leads_Capture_Settings {
 		?>
 		<textarea id="crm_leads_capture_success_message" name="<?php echo esc_attr( self::OPTION_SETTINGS ); ?>[success_message]" rows="2" class="large-text"><?php echo esc_textarea( $this->success_message() ); ?></textarea>
 		<p class="description"><?php echo esc_html__( 'Texto exibido quando a captura for concluída antes do redirecionamento automático.', 'crm-leads-capture' ); ?></p>
+		<?php
+	}
+
+	public function render_service_success_message_field(): void {
+		?>
+		<textarea id="crm_leads_capture_service_success_message" name="<?php echo esc_attr( self::OPTION_SETTINGS ); ?>[service_success_message]" rows="3" class="large-text"><?php echo esc_textarea( $this->service_success_message() ); ?></textarea>
+		<p class="description"><?php echo esc_html__( 'Texto exibido após o envio de um interesse em serviço. Não há redirecionamento automático.', 'crm-leads-capture' ); ?></p>
 		<?php
 	}
 
