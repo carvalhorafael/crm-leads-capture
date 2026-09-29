@@ -22,6 +22,8 @@ class CRM_Leads_Capture_Plugin {
 
 	private CRM_Leads_Capture_Processor $capture_processor;
 
+	private CRM_Leads_Capture_Frontend $frontend;
+
 	private CRM_Leads_Capture_Free_Material_Capture $free_material_capture;
 
 	private CRM_Leads_Capture_Service_Interest_Capture $service_interest_capture;
@@ -45,6 +47,7 @@ class CRM_Leads_Capture_Plugin {
 			$this->logger,
 			fn( string $provider ): string => $this->settings->provider_configuration_error( $provider )
 		);
+		$this->frontend = new CRM_Leads_Capture_Frontend( $this->capture_profiles, $this->capture_processor, $this->settings );
 
 		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
 		$this->service_interest_capture = new CRM_Leads_Capture_Service_Interest_Capture( $this->settings, $this->providers, null, $this->logger );
@@ -68,6 +71,7 @@ class CRM_Leads_Capture_Plugin {
 
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 		$this->settings->register_hooks();
+		$this->frontend->register_hooks();
 		$this->free_material_capture->register_hooks();
 		$this->service_interest_capture->register_hooks();
 		$this->github_updater->register_hooks();
@@ -108,6 +112,10 @@ class CRM_Leads_Capture_Plugin {
 
 	public function capture_processor(): CRM_Leads_Capture_Processor {
 		return $this->capture_processor;
+	}
+
+	public function frontend(): CRM_Leads_Capture_Frontend {
+		return $this->frontend;
 	}
 
 	public function github_updater(): CRM_Leads_Capture_GitHub_Updater {

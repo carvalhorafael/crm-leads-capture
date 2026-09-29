@@ -36,6 +36,7 @@ require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-registry.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-submission.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-processor.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-frontend.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-brevo-client.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-brevo-provider.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-rd-station-client.php';
@@ -79,6 +80,20 @@ function crm_leads_capture_render_service_interest_message(): void {
  */
 function crm_leads_capture_service_interest_nonce_field(): void {
 	wp_nonce_field( CRM_Leads_Capture_Service_Interest_Capture::NONCE_ACTION );
+}
+
+/**
+ * Renders the generic hidden fields for a capture profile form.
+ */
+function crm_leads_capture_form_fields( string $profile_slug ): void {
+	echo crm_leads_capture()->frontend()->form_fields( $profile_slug );
+}
+
+/**
+ * Renders the generic accessible feedback container.
+ */
+function crm_leads_capture_render_message( string $profile_slug = '' ): void {
+	echo crm_leads_capture()->frontend()->message_markup( $profile_slug );
 }
 
 if ( ! function_exists( 'brevo_leads_capture' ) ) {

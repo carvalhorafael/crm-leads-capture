@@ -1,8 +1,10 @@
 # Núcleo de perfis de captura
 
-O núcleo genérico representa cada formulário por um perfil de captura. Nesta
-etapa ele fornece contratos internos; os endpoints e formulários existentes só
-serão migrados quando seus adaptadores de compatibilidade estiverem prontos.
+O núcleo genérico representa cada formulário por um perfil de captura. O
+[contrato genérico de frontend](capture-frontend.md) já permite que novos
+formulários usem REST com aprimoramento progressivo ou `admin-post.php` sem
+JavaScript. Os formulários existentes serão migrados quando seus adaptadores de
+compatibilidade estiverem prontos.
 
 ## Contratos
 
