@@ -60,6 +60,49 @@ class BrevoClientTest extends TestCase {
 		$this->assertSame( 204, $result->status_code() );
 	}
 
+	public function test_accepts_ok_success(): void {
+		$client = new CRM_Leads_Capture_Brevo_Client(
+			'test-api-key',
+			static fn(): array => array(
+				'response' => array( 'code' => 200 ),
+				'body'     => '{"id":42}',
+			)
+		);
+
+		$result = $client->create_or_update_contact( array( 'email' => 'lead@example.com' ) );
+
+		$this->assertTrue( $result->is_successful() );
+		$this->assertSame( 200, $result->status_code() );
+	}
+
+	public function test_rejects_invalid_attributes_and_lists_before_http_call(): void {
+		$calls  = 0;
+		$client = new CRM_Leads_Capture_Brevo_Client(
+			'test-api-key',
+			static function () use ( &$calls ): array {
+				++$calls;
+				return array( 'response' => array( 'code' => 201 ), 'body' => '' );
+			}
+		);
+
+		$attribute_result = $client->create_or_update_contact(
+			array(
+				'email'      => 'lead@example.com',
+				'attributes' => array( 'invalid-name' => 'value' ),
+			)
+		);
+		$list_result = $client->create_or_update_contact(
+			array(
+				'email'   => 'lead@example.com',
+				'listIds' => array( '12' ),
+			)
+		);
+
+		$this->assertSame( 'invalid_payload', $attribute_result->data()['code'] );
+		$this->assertSame( 'invalid_payload', $list_result->data()['code'] );
+		$this->assertSame( 0, $calls );
+	}
+
 	public function test_returns_failure_without_exposing_api_key(): void {
 		$client = new CRM_Leads_Capture_Brevo_Client(
 			'secret-api-key',
@@ -75,9 +118,9 @@ class BrevoClientTest extends TestCase {
 		$this->assertSame( 400, $result->status_code() );
 		$this->assertStringNotContainsString( 'secret-api-key', $result->message() );
 		$this->assertSame( 'invalid_parameter', $result->data()['error_summary']['code'] );
-		$this->assertSame( 'Attribute SOURCE does not exist', $result->data()['error_summary']['message'] );
-		$this->assertSame( 'attributes.SOURCE', $result->data()['error_summary']['details']['field'] );
-		$this->assertArrayNotHasKey( 'nested', $result->data()['error_summary']['details'] );
+		$this->assertArrayNotHasKey( 'message', $result->data()['error_summary'] );
+		$this->assertSame( array( 'field', 'nested' ), $result->data()['error_summary']['detail_keys'] );
+		$this->assertStringNotContainsString( 'attributes.SOURCE', serialize( $result->data()['error_summary'] ) );
 	}
 
 	public function test_requires_configured_api_key(): void {

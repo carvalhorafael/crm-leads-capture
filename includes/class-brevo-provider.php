@@ -14,9 +14,17 @@ class CRM_Leads_Capture_Brevo_Provider implements CRM_Leads_Capture_Provider_Int
 
 	private CRM_Leads_Capture_Lead_Payload $payload_builder;
 
-	public function __construct( CRM_Leads_Capture_Settings $settings, ?CRM_Leads_Capture_Lead_Payload $payload_builder = null ) {
+	/** @var callable|null */
+	private $client_factory;
+
+	public function __construct(
+		CRM_Leads_Capture_Settings $settings,
+		?CRM_Leads_Capture_Lead_Payload $payload_builder = null,
+		?callable $client_factory = null
+	) {
 		$this->settings        = $settings;
 		$this->payload_builder = $payload_builder ?: new CRM_Leads_Capture_Lead_Payload();
+		$this->client_factory  = $client_factory;
 	}
 
 	public function id(): string {
@@ -57,17 +65,25 @@ class CRM_Leads_Capture_Brevo_Provider implements CRM_Leads_Capture_Provider_Int
 	}
 
 	public function send_lead( array $payload, array $context ): CRM_Leads_Capture_Result {
-		$list_id = max( 0, (int) ( $context['list_id'] ?? $this->settings->brevo_default_list_id() ) );
-		if ( 0 >= $list_id ) {
+		$list_ids = $this->list_ids( $context );
+		if ( array() === $list_ids ) {
 			return CRM_Leads_Capture_Result::failure( 0, 'Brevo list is not configured.', array( 'code' => 'missing_list' ) );
 		}
 
+		$mapped = $this->mapped_attributes( $payload, $context );
+		if ( ! $mapped->is_successful() ) {
+			return $mapped;
+		}
+
+		$input = $this->payload_input( $payload );
+
 		$contact = $this->payload_builder->build_contact(
-			$payload,
+			$input,
 			array(
-				'source'   => $payload['source'] ?? '',
-				'material' => $payload['material'] ?? '',
-				'list_id'  => $list_id,
+				'source'     => $input['source'] ?? '',
+				'material'   => $input['material'] ?? '',
+				'list_ids'   => $list_ids,
+				'attributes' => $mapped->data()['attributes'] ?? array(),
 			)
 		);
 
@@ -80,7 +96,7 @@ class CRM_Leads_Capture_Brevo_Provider implements CRM_Leads_Capture_Provider_Int
 			return CRM_Leads_Capture_Result::failure( 0, 'Brevo payload is invalid.' );
 		}
 
-		return ( new CRM_Leads_Capture_Brevo_Client( $this->settings->brevo_api_key() ) )->create_or_update_contact( $lead );
+		return $this->client()->create_or_update_contact( $lead );
 	}
 
 	public function error_codes(): array {
@@ -103,5 +119,127 @@ class CRM_Leads_Capture_Brevo_Provider implements CRM_Leads_Capture_Provider_Int
 		return function_exists( 'sanitize_text_field' )
 			? sanitize_text_field( (string) $value )
 			: trim( strip_tags( (string) $value ) );
+	}
+
+	/**
+	 * @param array<string, mixed> $context
+	 * @return array<int, int>
+	 */
+	private function list_ids( array $context ): array {
+		$value = $context['list_ids'] ?? $context['list_id'] ?? array();
+		$ids   = is_array( $value ) ? $value : array( $value );
+		$ids   = array_values(
+			array_unique(
+				array_filter(
+					array_map( 'intval', $ids ),
+					static fn( int $id ): bool => 0 < $id
+				)
+			)
+		);
+
+		if ( array() === $ids ) {
+			$default_id = $this->settings->brevo_default_list_id();
+			if ( 0 < $default_id ) {
+				$ids[] = $default_id;
+			}
+		}
+
+		return $ids;
+	}
+
+	/**
+	 * @param array<string, mixed> $payload
+	 * @return array<string, mixed>
+	 */
+	private function payload_input( array $payload ): array {
+		if ( ! isset( $payload['lead'] ) || ! is_array( $payload['lead'] ) ) {
+			return $payload;
+		}
+
+		$tracking = isset( $payload['tracking'] ) && is_array( $payload['tracking'] ) ? $payload['tracking'] : array();
+		$trusted  = isset( $payload['context'] ) && is_array( $payload['context'] ) ? $payload['context'] : array();
+
+		return array_merge(
+			$payload['lead'],
+			$tracking,
+			array(
+				'source'   => $trusted['source'] ?? '',
+				'material' => $trusted['material'] ?? '',
+			)
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $payload
+	 * @param array<string, mixed> $context
+	 */
+	private function mapped_attributes( array $payload, array $context ): CRM_Leads_Capture_Result {
+		$attributes = isset( $context['attributes'] ) && is_array( $context['attributes'] ) ? $context['attributes'] : array();
+		if ( ! isset( $payload['lead'] ) || ! is_array( $payload['lead'] ) ) {
+			return CRM_Leads_Capture_Result::success( 200, '', array( 'attributes' => $attributes ) );
+		}
+
+		$map            = isset( $context['attribute_map'] ) && is_array( $context['attribute_map'] ) ? $context['attribute_map'] : array();
+		$mapped_targets = array();
+		foreach ( array( 'lead', 'tracking', 'custom_fields', 'consent' ) as $group ) {
+			$values = isset( $payload[ $group ] ) && is_array( $payload[ $group ] ) ? $payload[ $group ] : array();
+			foreach ( $values as $field => $value ) {
+				if ( $this->is_empty_value( $value ) || $this->is_standard_field( $group, (string) $field ) ) {
+					continue;
+				}
+
+				$path      = $group . '.' . $field;
+				$attribute = $map[ $path ] ?? $map[ $field ] ?? '';
+				if ( ! is_string( $attribute ) || 1 !== preg_match( '/^[A-Z][A-Z0-9_]*$/', $attribute ) ) {
+					return CRM_Leads_Capture_Result::failure(
+						0,
+						'Brevo attribute mapping is not configured.',
+						array(
+							'code'   => 'invalid_payload',
+							'fields' => array( $path ),
+						)
+					);
+				}
+				if ( isset( $mapped_targets[ $attribute ] ) ) {
+					return CRM_Leads_Capture_Result::failure(
+						0,
+						'Brevo attribute mapping contains duplicate destinations.',
+						array( 'code' => 'invalid_payload' )
+					);
+				}
+
+				$mapped_targets[ $attribute ] = true;
+				$attributes[ $attribute ]     = $value;
+			}
+		}
+
+		return CRM_Leads_Capture_Result::success( 200, '', array( 'attributes' => $attributes ) );
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	private function is_empty_value( $value ): bool {
+		return '' === $value || null === $value || array() === $value;
+	}
+
+	private function is_standard_field( string $group, string $field ): bool {
+		$standard = array(
+			'lead'     => array( 'email', 'name', 'whatsapp' ),
+			'tracking' => array( 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_name' ),
+		);
+
+		return in_array( $field, $standard[ $group ] ?? array(), true );
+	}
+
+	private function client(): CRM_Leads_Capture_Brevo_Client {
+		if ( null !== $this->client_factory ) {
+			$client = call_user_func( $this->client_factory, $this->settings->brevo_api_key() );
+			if ( $client instanceof CRM_Leads_Capture_Brevo_Client ) {
+				return $client;
+			}
+		}
+
+		return new CRM_Leads_Capture_Brevo_Client( $this->settings->brevo_api_key() );
 	}
 }

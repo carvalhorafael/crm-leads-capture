@@ -210,9 +210,10 @@ Quando `WP_DEBUG` está ativo, falhas da API Brevo são registradas com prefixo:
 
 O log inclui `material_id`, `list_id`, `status_code`, um resumo do payload
 sem dados pessoais (`attribute_keys`, `list_ids`, `update_enabled`) e um resumo
-sanitizado da resposta Brevo (`code`, `message` e detalhes escalares quando
-existirem). O plugin não registra API key, email, telefone, payload completo ou
-corpo bruto da resposta.
+sanitizado da resposta Brevo (`code`, `type` e apenas os nomes das chaves de
+detalhe quando existirem). Mensagens e valores retornados pela API não são
+registrados porque podem repetir dados pessoais enviados. O plugin não registra
+API key, email, telefone, payload completo ou corpo bruto da resposta.
 
 Em `@wordpress/env`, prefira habilitar `WP_DEBUG_LOG` no ambiente local para
 persistir `error_log()` em `wp-content/debug.log`. Depois da submissão, consulte:

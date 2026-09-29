@@ -46,3 +46,6 @@ submetidos.
 O núcleo não chama APIs de persistência do WordPress. A submissão existe apenas
 em memória durante o processamento e é encaminhada diretamente ao provider
 global ativo.
+
+Para o destino Brevo, consulte o
+[mapeamento de listas e atributos por perfil](brevo-profile-mapping.md).
