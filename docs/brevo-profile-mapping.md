@@ -15,6 +15,7 @@ nem nomes de atributos.
 			'custom_fields.company'   => 'COMPANY',
 			'custom_fields.team_size' => 'TEAM_SIZE',
 			'consent.consent'         => 'PRIVACY_CONSENT',
+			'context.page_url'        => 'PAGE_URL',
 		),
 	),
 ),
@@ -30,6 +31,10 @@ termina localmente com `missing_list`.
 `tracking`, precisam de mapeamento explícito quando tenham valor. Isso impede
 que o nome de um campo do formulário seja usado implicitamente como destino
 remoto. Dois campos não podem apontar para o mesmo atributo.
+
+Valores confiáveis adicionados pelo servidor podem ser mapeados com o prefixo
+`context.`, como `context.page_url`. Eles não são aceitos diretamente do
+navegador.
 
 ## Atributos padrão e customizados
 

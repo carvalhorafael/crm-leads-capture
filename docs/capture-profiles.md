@@ -20,8 +20,26 @@ templates diretamente.
 - `CRM_Leads_Capture_Processor` verifica nonce e honeypot, normaliza os
   campos declarados, resolve o provider global e encaminha a submissão.
 
+O registry também recebe dois perfis comerciais nativos:
+
+- `coo-as-a-service`;
+- `speaker-invitation`.
+
+Perfis salvos pelo administrador são carregados depois dos padrões nativos. Um
+perfil persistido com o mesmo slug substitui o padrão de forma explícita.
+
 Campos ausentes do schema são ignorados. Assim, valores enviados pelo navegador
 não podem escolher provider, listas, conversões ou mapeamentos.
+
+## Provider global
+
+`crm_leads_capture_settings['active_provider']` é a única origem da decisão
+entre Brevo e RD Station. Perfis e páginas guardam apenas configurações de
+destino daquele provider, como listas, conversão, tags e mapas. Mesmo que o
+navegador envie um campo chamado `provider`, ele é ignorado.
+
+Ao trocar o provider global, as configurações do provider inativo continuam
+preservadas para uma troca futura, mas não participam do envio atual.
 
 ## Tipos e grupos
 
@@ -47,6 +65,10 @@ submetidos.
 O núcleo não chama APIs de persistência do WordPress. A submissão existe apenas
 em memória durante o processamento e é encaminhada diretamente ao provider
 global ativo.
+
+Options e metadados persistem apenas configuração: schemas de perfis,
+associações de páginas e destinos no CRM. Eles nunca contêm a submissão do
+visitante.
 
 Para o destino Brevo, consulte o
 [mapeamento de listas e atributos por perfil](brevo-profile-mapping.md).

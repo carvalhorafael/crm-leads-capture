@@ -43,9 +43,7 @@ class CRM_Leads_Capture_Plugin {
 		$this->providers->register( new CRM_Leads_Capture_Brevo_Provider( $this->settings ) );
 		$this->providers->register( new CRM_Leads_Capture_RD_Station_Provider( $this->settings ) );
 		$this->capture_profiles = new CRM_Leads_Capture_Profile_Registry();
-		( new CRM_Leads_Capture_Profile_Defaults( $this->settings ) )->register( $this->capture_profiles );
 		$this->profile_repository = new CRM_Leads_Capture_Profile_Repository( $this->settings );
-		$this->profile_repository->register_profiles( $this->capture_profiles );
 		$this->capture_processor = new CRM_Leads_Capture_Processor(
 			$this->capture_profiles,
 			$this->providers,
@@ -85,6 +83,7 @@ class CRM_Leads_Capture_Plugin {
 		$this->booted = true;
 
 		add_action( 'init', array( $this, 'load_textdomain' ) );
+		add_action( 'init', array( $this, 'register_capture_profiles' ), 11 );
 		$this->settings->register_hooks();
 		$this->profile_repository->register_hooks();
 		$this->profile_admin->register_hooks();
@@ -101,6 +100,11 @@ class CRM_Leads_Capture_Plugin {
 			false,
 			dirname( CRM_LEADS_CAPTURE_BASENAME ) . '/languages'
 		);
+	}
+
+	public function register_capture_profiles(): void {
+		( new CRM_Leads_Capture_Profile_Defaults( $this->settings ) )->register( $this->capture_profiles );
+		$this->profile_repository->register_profiles( $this->capture_profiles );
 	}
 
 	public function settings(): CRM_Leads_Capture_Settings {

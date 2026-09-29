@@ -14,6 +14,8 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->settings = new CRM_Leads_Capture_Settings();
 		delete_option( CRM_Leads_Capture_Settings::OPTION_SETTINGS );
 		delete_option( CRM_Leads_Capture_Settings::OPTION_DEFAULT_LIST_ID );
+		delete_option( CRM_Leads_Capture_Settings::LEGACY_OPTION_SETTINGS );
+		delete_option( CRM_Leads_Capture_Settings::LEGACY_OPTION_DEFAULT_LIST_ID );
 	}
 
 	public function test_plugin_registers_settings_admin_hooks(): void {
@@ -41,6 +43,23 @@ class SettingsTest extends WP_UnitTestCase {
 
 	public function test_active_provider_defaults_to_brevo_when_not_explicitly_configured(): void {
 		$this->assertSame( 'brevo', $this->settings->active_provider() );
+	}
+
+	public function test_upgrade_keeps_legacy_brevo_options_readable_without_migration(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::LEGACY_OPTION_SETTINGS,
+			array(
+				'api_key'         => 'legacy-api-key',
+				'default_list_id' => '654',
+			)
+		);
+
+		$this->assertSame( 'legacy-api-key', $this->settings->brevo_api_key() );
+		$this->assertSame( 654, $this->settings->brevo_default_list_id() );
+		$this->assertSame(
+			array( 'api_key' => 'legacy-api-key', 'default_list_id' => '654' ),
+			get_option( CRM_Leads_Capture_Settings::LEGACY_OPTION_SETTINGS )
+		);
 	}
 
 	public function test_validates_active_provider_availability_and_credentials(): void {

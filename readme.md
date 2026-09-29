@@ -7,6 +7,11 @@ Plugin WordPress para centralizar captura de leads e envio para CRMs.
 Este plugin processa submissões de captura, valida nonce/honeypot/dados do lead,
 monta um payload normalizado e delega o envio ao provider de CRM ativo.
 
+Formulários reutilizáveis são definidos por perfis com schema, validação,
+mapeamento do CRM e comportamento de sucesso. O plugin inclui os perfis
+`coo-as-a-service` e `speaker-invitation`, além do adaptador compatível de
+materiais gratuitos.
+
 O domínio persistente de materiais gratuitos continua fora deste plugin. Quando
 o plugin `free-materials` estiver ativo, este plugin consome o CPT
 `material_gratuito`, mas não registra CPT, taxonomia, rewrites ou templates
@@ -113,6 +118,13 @@ Compatibilidade temporária:
 - nonce/action antigo `brevo_leads_capture_free_material`
 - campo REST antigo `brevo_leads_capture_nonce`
 
+Formulários baseados em perfil usam:
+
+```text
+POST /wp-json/crm-leads-capture/v1/capture/{perfil}
+GET  /wp-json/crm-leads-capture/v1/capture/{perfil}/nonce
+```
+
 ## Segurança
 
 - Entradas são sanitizadas e nonces validados.
@@ -120,6 +132,13 @@ Compatibilidade temporária:
   resposta sensível do CRM no front-end.
 - Logs técnicos só são emitidos quando `WP_DEBUG` está ativo e passam por
   redação de chaves, tokens, e-mails, telefones, payloads e bodies.
+- Submissões são encaminhadas em memória e não criam posts, metadados ou uma
+  base local de leads.
+
+## Atualização de sites existentes
+
+O roteiro de pré-verificação, instalação, smoke tests e rollback está em
+[`docs/upgrade-checklist.md`](docs/upgrade-checklist.md).
 
 ## Testes
 

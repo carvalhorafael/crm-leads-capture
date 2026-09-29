@@ -4,6 +4,15 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+- Adiciona perfis de captura reutilizáveis com provider global e frontend
+  genérico.
+- Migra materiais gratuitos, COO as a Service e convites para palestras para o
+  pipeline comum, preservando contratos legados necessários.
+- Remove o armazenamento local de interesses comerciais e adiciona mapeamento
+  completo de campos customizados para Brevo e RD Station.
+- Adiciona administração de perfis, associação por página, diagnóstico de
+  overrides antigos, matriz de regressão e checklist seguro de atualização.
+
 ## 0.6.1 - captura em site privado
 
 - Corrige a captura em sites que exigem login, onde as duas chamadas REST eram
