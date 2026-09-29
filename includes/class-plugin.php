@@ -20,6 +20,8 @@ class CRM_Leads_Capture_Plugin {
 
 	private CRM_Leads_Capture_Free_Material_Capture $free_material_capture;
 
+	private CRM_Leads_Capture_Service_Interest_Capture $service_interest_capture;
+
 	private CRM_Leads_Capture_GitHub_Updater $github_updater;
 
 	private CRM_Leads_Capture_Logger $logger;
@@ -32,6 +34,7 @@ class CRM_Leads_Capture_Plugin {
 		$this->providers->register( new CRM_Leads_Capture_RD_Station_Provider( $this->settings ) );
 
 		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
+		$this->service_interest_capture = new CRM_Leads_Capture_Service_Interest_Capture( $this->settings, $this->providers, null, $this->logger );
 		$this->github_updater        = new CRM_Leads_Capture_GitHub_Updater( CRM_LEADS_CAPTURE_FILE, CRM_LEADS_CAPTURE_VERSION );
 	}
 
@@ -53,6 +56,7 @@ class CRM_Leads_Capture_Plugin {
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 		$this->settings->register_hooks();
 		$this->free_material_capture->register_hooks();
+		$this->service_interest_capture->register_hooks();
 		$this->github_updater->register_hooks();
 		add_action( 'elementor_pro/forms/actions/register', array( $this, 'register_elementor_form_action' ) );
 	}
@@ -71,6 +75,10 @@ class CRM_Leads_Capture_Plugin {
 
 	public function free_material_capture(): CRM_Leads_Capture_Free_Material_Capture {
 		return $this->free_material_capture;
+	}
+
+	public function service_interest_capture(): CRM_Leads_Capture_Service_Interest_Capture {
+		return $this->service_interest_capture;
 	}
 
 	public function logger(): CRM_Leads_Capture_Logger {
