@@ -1,6 +1,6 @@
 <?php
 /**
- * Service interest lead capture handler.
+ * Compatibility adapter for the former service-interest capture contract.
  *
  * @package CRM_Leads_Capture
  */
@@ -22,14 +22,12 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 	public const POST_TYPE = 'crm_service_interest';
 
 	private CRM_Leads_Capture_Settings $settings;
-
 	private CRM_Leads_Capture_Provider_Registry $providers;
-
 	private CRM_Leads_Capture_Logger $logger;
+	private ?CRM_Leads_Capture_Profile_Registry $profiles;
+	private ?CRM_Leads_Capture_Processor $processor;
 
-	/**
-	 * @var callable|null
-	 */
+	/** @var callable|null */
 	private $provider_factory;
 
 	/**
@@ -39,57 +37,24 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 		CRM_Leads_Capture_Settings $settings,
 		CRM_Leads_Capture_Provider_Registry $providers,
 		?callable $provider_factory = null,
-		?CRM_Leads_Capture_Logger $logger = null
+		?CRM_Leads_Capture_Logger $logger = null,
+		?CRM_Leads_Capture_Profile_Registry $profiles = null,
+		?CRM_Leads_Capture_Processor $processor = null
 	) {
 		$this->settings         = $settings;
 		$this->providers        = $providers;
 		$this->provider_factory = $provider_factory;
 		$this->logger           = $logger ?: new CRM_Leads_Capture_Logger();
+		$this->profiles         = $profiles;
+		$this->processor        = $processor;
 	}
 
 	public function register_hooks(): void {
-		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'admin_post_nopriv_' . self::ACTION, array( $this, 'handle_request' ) );
 		add_action( 'admin_post_' . self::ACTION, array( $this, 'handle_request' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
-		add_action( 'add_meta_boxes_' . self::POST_TYPE, array( $this, 'register_details_meta_box' ) );
-		add_filter( 'manage_' . self::POST_TYPE . '_posts_columns', array( $this, 'filter_admin_columns' ) );
-		add_action( 'manage_' . self::POST_TYPE . '_posts_custom_column', array( $this, 'render_admin_column' ), 10, 2 );
 		add_shortcode( self::SHORTCODE_MESSAGE, array( $this, 'render_message_shortcode' ) );
-	}
-
-	public function register_post_type(): void {
-		register_post_type(
-			self::POST_TYPE,
-			array(
-				'labels'              => array(
-					'name'          => __( 'Interesses em serviços', 'crm-leads-capture' ),
-					'singular_name' => __( 'Interesse em serviço', 'crm-leads-capture' ),
-					'menu_name'     => __( 'Interesses em serviços', 'crm-leads-capture' ),
-					'edit_item'     => __( 'Ver interesse em serviço', 'crm-leads-capture' ),
-				),
-				'public'              => false,
-				'publicly_queryable'  => false,
-				'show_ui'             => true,
-				'show_in_menu'        => 'options-general.php',
-				'show_in_rest'        => false,
-				'exclude_from_search' => true,
-				'supports'            => array( 'title' ),
-				'capabilities'        => array(
-					'edit_post'          => 'manage_options',
-					'read_post'          => 'manage_options',
-					'delete_post'        => 'manage_options',
-					'edit_posts'         => 'manage_options',
-					'edit_others_posts'  => 'manage_options',
-					'delete_posts'       => 'manage_options',
-					'publish_posts'      => 'manage_options',
-					'read_private_posts' => 'manage_options',
-					'create_posts'       => 'do_not_allow',
-				),
-				'map_meta_cap'        => false,
-			)
-		);
 	}
 
 	public function register_rest_routes(): void {
@@ -102,7 +67,6 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 				'permission_callback' => '__return_true',
 			)
 		);
-
 		register_rest_route(
 			self::REST_NAMESPACE,
 			self::REST_NONCE_ROUTE,
@@ -121,18 +85,15 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 		return $response;
 	}
 
-	/**
-	 * @param WP_REST_Request $request REST request.
-	 */
 	public function handle_rest_request( WP_REST_Request $request ): WP_REST_Response {
 		$params = $request->get_params();
 		if ( isset( $params[ self::REST_NONCE_FIELD ] ) ) {
 			$params[ self::NONCE_FIELD ] = $params[ self::REST_NONCE_FIELD ];
 		}
 
-		$result = $this->process_submission( $params );
-		$data   = $result->data();
-
+		$referer = $request->get_header( 'referer' );
+		$result  = $this->process_submission( $params, is_string( $referer ) ? $referer : '' );
+		$data    = $result->data();
 		if ( $result->is_successful() ) {
 			return rest_ensure_response(
 				array(
@@ -156,7 +117,8 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 
 	public function handle_request(): void {
 		$request = $this->unslash_array( $_POST );
-		$result  = $this->process_submission( $request );
+		$referer = wp_get_referer();
+		$result  = $this->process_submission( $request, is_string( $referer ) ? $referer : '' );
 		$data    = $result->data();
 		$status  = $result->is_successful() ? 'success' : 'error';
 		$code    = isset( $data['code'] ) && is_string( $data['code'] ) ? $data['code'] : '';
@@ -166,96 +128,42 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 	}
 
 	/**
+	 * Routes the legacy form through the profile processor without local storage.
+	 *
 	 * @param array<string, mixed> $request Submitted fields.
 	 */
-	public function process_submission( array $request ): CRM_Leads_Capture_Result {
-		if ( ! $this->is_valid_nonce( $request[ self::NONCE_FIELD ] ?? '' ) ) {
-			return $this->failure( 'invalid_nonce' );
+	public function process_submission( array $request, string $referer = '' ): CRM_Leads_Capture_Result {
+		$processor = $this->processor;
+		if ( null !== $this->provider_factory || null === $processor ) {
+			$processor = $this->compatibility_processor();
 		}
 
-		if ( '' !== $this->clean_string( $request[ self::HONEYPOT_FIELD ] ?? '' ) ) {
-			return $this->failure( 'spam' );
-		}
+		$page_url = esc_url_raw( '' !== $referer ? $referer : $this->clean_string( $request['page_url'] ?? '' ) );
+		$context  = array_filter(
+			array(
+				'page_url' => '' !== $page_url ? $page_url : null,
+				'provider_overrides' => '' !== $this->clean_analytics_device_id( $request['analytics_device_id'] ?? '' )
+					? array(
+						'rd_station' => array( 'analytics_device_id' => $this->clean_analytics_device_id( $request['analytics_device_id'] ?? '' ) ),
+					)
+					: null,
+			),
+			static fn( $value ): bool => null !== $value
+		);
 
-		$lead = $this->lead_from_request( $request );
-		if ( ! $this->is_valid_lead( $lead ) ) {
+		$result = $processor->process( CRM_Leads_Capture_Profile_Defaults::COO_SLUG, $request, $context );
+		if ( ! $result->is_successful() && 'invalid_fields' === ( $result->data()['code'] ?? '' ) ) {
 			return $this->failure( 'invalid_lead' );
 		}
 
-		$provider_id = $this->settings->active_provider();
-		if ( null === $this->provider_factory ) {
-			$provider_configuration_error = $this->settings->provider_configuration_error( $provider_id );
-			if ( '' !== $provider_configuration_error ) {
-				return $this->failure( $provider_configuration_error );
-			}
-		}
-		$provider    = $this->provider( $provider_id );
-		$lead_id     = $this->store_interest( $lead, $provider_id );
-		$context     = $this->provider_context( $provider_id, $request );
-
-		if ( 'brevo' === $provider_id && empty( $context['list_id'] ) ) {
-			$this->update_interest_status( $lead_id, 'failed', 'missing_list' );
-			return $this->failure( 'missing_list', $lead_id );
-		}
-
-		$payload = array(
-			'name'         => $lead['name'],
-			'email'        => $lead['email'],
-			'whatsapp'     => $lead['whatsapp'],
-			'source'       => 'coo_as_a_service',
-			'material'     => 'COO as a Service',
-			'utm_source'   => $lead['utm_source'],
-			'utm_medium'   => $lead['utm_medium'],
-			'utm_campaign' => $lead['utm_campaign'],
-			'utm_term'     => $lead['utm_term'],
-			'utm_content'  => $lead['utm_content'],
-		);
-
-		$provider_result = $provider->send_lead( $payload, $context );
-		if ( ! $provider_result->is_successful() ) {
-			$code = $this->provider_failure_code( $provider_id, $provider_result );
-			$this->update_interest_status( $lead_id, 'failed', $code );
-			$this->logger->debug(
-				'Service interest CRM provider request failed.',
-				array(
-					'lead_id'     => $lead_id,
-					'provider'    => $provider_id,
-					'status_code' => $provider_result->status_code(),
-				)
-			);
-
-			return $this->failure( $code, $lead_id );
-		}
-
-		$this->update_interest_status( $lead_id, 'sent', '' );
-
-		return CRM_Leads_Capture_Result::success(
-			200,
-			'Service interest captured.',
-			array(
-				'lead_id'  => $lead_id,
-				'provider' => $provider_id,
-			)
-		);
+		return $result;
 	}
 
 	public function enqueue_frontend_assets(): void {
 		$style_path  = CRM_LEADS_CAPTURE_DIR . 'assets/css/free-material-capture.css';
 		$script_path = CRM_LEADS_CAPTURE_DIR . 'assets/js/service-interest-capture.js';
-
-		wp_enqueue_style(
-			'crm-leads-capture-feedback',
-			plugins_url( 'assets/css/free-material-capture.css', CRM_LEADS_CAPTURE_FILE ),
-			array(),
-			$this->asset_version( $style_path )
-		);
-		wp_enqueue_script(
-			'crm-leads-capture-service-interest',
-			plugins_url( 'assets/js/service-interest-capture.js', CRM_LEADS_CAPTURE_FILE ),
-			array(),
-			$this->asset_version( $script_path ),
-			true
-		);
+		wp_enqueue_style( 'crm-leads-capture-feedback', plugins_url( 'assets/css/free-material-capture.css', CRM_LEADS_CAPTURE_FILE ), array(), $this->asset_version( $style_path ) );
+		wp_enqueue_script( 'crm-leads-capture-service-interest', plugins_url( 'assets/js/service-interest-capture.js', CRM_LEADS_CAPTURE_FILE ), array(), $this->asset_version( $script_path ), true );
 		wp_localize_script(
 			'crm-leads-capture-service-interest',
 			'CRMLeadsCaptureServiceInterest',
@@ -276,30 +184,15 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 		if ( 'service_interest' !== $this->clean_string( $request['capture_type'] ?? '' ) ) {
 			return array();
 		}
-
 		$status = $this->clean_string( $request['crm_leads_capture'] ?? '' );
 		if ( 'success' === $status ) {
-			return array(
-				'tone'    => 'success',
-				'label'   => __( 'Recebido', 'crm-leads-capture' ),
-				'message' => $this->settings->service_success_message(),
-			);
+			return array( 'tone' => 'success', 'label' => __( 'Recebido', 'crm-leads-capture' ), 'message' => $this->settings->service_success_message() );
 		}
-
 		if ( 'error' !== $status ) {
 			return array();
 		}
 
-		$code = $this->clean_string( $request['crm_error'] ?? '' );
-		if ( ! in_array( $code, CRM_Leads_Capture_Settings::ERROR_MESSAGE_CODES, true ) ) {
-			$code = 'provider_error';
-		}
-
-		return array(
-			'tone'    => 'danger',
-			'label'   => __( 'Erro', 'crm-leads-capture' ),
-			'message' => $this->error_message( $code ),
-		);
+		return array( 'tone' => 'danger', 'label' => __( 'Erro', 'crm-leads-capture' ), 'message' => $this->error_message( $this->clean_string( $request['crm_error'] ?? '' ) ) );
 	}
 
 	public function render_message_shortcode(): string {
@@ -312,225 +205,46 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 		echo $this->message_markup( $this->current_message() );
 	}
 
-	public function register_details_meta_box(): void {
-		add_meta_box(
-			'crm_service_interest_details',
-			__( 'Detalhes do interesse', 'crm-leads-capture' ),
-			array( $this, 'render_details_meta_box' ),
-			self::POST_TYPE,
-			'normal',
-			'high'
-		);
-	}
-
-	/**
-	 * @param WP_Post $post Service interest post.
-	 */
-	public function render_details_meta_box( $post ): void {
-		$fields = array(
-			'email'       => __( 'E-mail', 'crm-leads-capture' ),
-			'whatsapp'    => __( 'WhatsApp', 'crm-leads-capture' ),
-			'company'     => __( 'Empresa', 'crm-leads-capture' ),
-			'role'        => __( 'Papel', 'crm-leads-capture' ),
-			'company_url' => __( 'Site ou LinkedIn', 'crm-leads-capture' ),
-			'challenge'   => __( 'Dependência operacional relatada', 'crm-leads-capture' ),
-			'page_url'    => __( 'Página de origem', 'crm-leads-capture' ),
-			'provider'    => __( 'Provider', 'crm-leads-capture' ),
-			'status'      => __( 'Status de envio', 'crm-leads-capture' ),
-			'error_code'  => __( 'Código de erro', 'crm-leads-capture' ),
-		);
-		?>
-		<table class="widefat striped">
-			<tbody>
-				<?php foreach ( $fields as $key => $label ) : ?>
-					<?php $value = (string) get_post_meta( $post->ID, '_crm_service_interest_' . $key, true ); ?>
-					<tr>
-						<th scope="row"><?php echo esc_html( $label ); ?></th>
-						<td><?php echo 'challenge' === $key ? nl2br( esc_html( $value ) ) : esc_html( $value ); ?></td>
-					</tr>
-				<?php endforeach; ?>
-			</tbody>
-		</table>
-		<?php
-	}
-
-	/**
-	 * @param array<string, string> $columns Admin columns.
-	 * @return array<string, string>
-	 */
-	public function filter_admin_columns( array $columns ): array {
-		return array(
-			'cb'      => $columns['cb'] ?? '',
-			'title'   => __( 'Contato', 'crm-leads-capture' ),
-			'company' => __( 'Empresa', 'crm-leads-capture' ),
-			'email'   => __( 'E-mail', 'crm-leads-capture' ),
-			'status'  => __( 'Status', 'crm-leads-capture' ),
-			'date'    => $columns['date'] ?? __( 'Data', 'crm-leads-capture' ),
-		);
-	}
-
-	public function render_admin_column( string $column, int $post_id ): void {
-		$allowed = array( 'company', 'email', 'status' );
-		if ( in_array( $column, $allowed, true ) ) {
-			echo esc_html( (string) get_post_meta( $post_id, '_crm_service_interest_' . $column, true ) );
+	private function compatibility_processor(): CRM_Leads_Capture_Processor {
+		$profile = null !== $this->profiles ? $this->profiles->resolve( CRM_Leads_Capture_Profile_Defaults::COO_SLUG ) : null;
+		if ( null === $profile ) {
+			$profile = ( new CRM_Leads_Capture_Profile_Defaults( $this->settings ) )->coo_profile();
 		}
-	}
+		$profiles = new CRM_Leads_Capture_Profile_Registry();
+		$profiles->register( $profile );
 
-	private function provider( string $provider_id ): CRM_Leads_Capture_Provider_Interface {
+		$provider_id = $this->settings->active_provider();
+		$provider    = $this->providers->active( $provider_id );
 		if ( null !== $this->provider_factory ) {
-			$provider = call_user_func( $this->provider_factory, $provider_id );
-			if ( $provider instanceof CRM_Leads_Capture_Provider_Interface ) {
-				return $provider;
+			$candidate = call_user_func( $this->provider_factory, $provider_id );
+			if ( $candidate instanceof CRM_Leads_Capture_Provider_Interface ) {
+				$provider = $candidate;
 			}
 		}
+		$providers = new CRM_Leads_Capture_Provider_Registry();
+		$providers->register( new CRM_Leads_Capture_Recording_Provider( $provider, $provider_id ) );
 
-		return $this->providers->active( $provider_id );
-	}
-
-	/**
-	 * @param array<string, mixed> $request Submitted fields.
-	 * @return array<string, string>
-	 */
-	private function lead_from_request( array $request ): array {
-		$lead = array(
-			'name'        => $this->clean_string( $request['name'] ?? '' ),
-			'email'       => sanitize_email( $this->clean_string( $request['email'] ?? '' ) ),
-			'whatsapp'    => $this->clean_string( $request['whatsapp'] ?? '' ),
-			'company'     => $this->clean_string( $request['company'] ?? '' ),
-			'role'        => $this->clean_string( $request['role'] ?? '' ),
-			'company_url' => esc_url_raw( $this->clean_string( $request['company_url'] ?? '' ) ),
-			'challenge'   => sanitize_textarea_field( $this->scalar_string( $request['challenge'] ?? '' ) ),
-			'consent'     => $this->clean_string( $request['consent'] ?? '' ),
-			'page_url'    => esc_url_raw( $this->clean_string( $request['page_url'] ?? '' ) ),
+		return new CRM_Leads_Capture_Processor(
+			$profiles,
+			$providers,
+			static fn(): string => $provider_id,
+			static fn( string $nonce, string $action ): bool => false !== wp_verify_nonce( $nonce, $action ),
+			$this->logger,
+			null === $this->provider_factory ? fn( string $id ): string => $this->settings->provider_configuration_error( $id ) : null
 		);
-
-		foreach ( array( 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content' ) as $utm_field ) {
-			$lead[ $utm_field ] = $this->clean_string( $request[ $utm_field ] ?? '' );
-		}
-
-		return $lead;
 	}
 
-	/**
-	 * @param array<string, string> $lead Normalized lead.
-	 */
-	private function is_valid_lead( array $lead ): bool {
-		return '' !== $lead['name']
-			&& false !== is_email( $lead['email'] )
-			&& '' !== $lead['company']
-			&& in_array( $lead['role'], array( 'founder', 'ceo', 'executive' ), true )
-			&& '' !== $lead['challenge']
-			&& '1' === $lead['consent'];
-	}
-
-	/**
-	 * @param array<string, string> $lead Normalized lead.
-	 */
-	private function store_interest( array $lead, string $provider_id ): int {
-		$post_id = wp_insert_post(
-			array(
-				'post_type'   => self::POST_TYPE,
-				'post_status' => 'private',
-				'post_title'  => sprintf( '%s — %s', $lead['name'], $lead['company'] ),
-			),
-			true
-		);
-
-		if ( is_wp_error( $post_id ) ) {
-			$this->logger->debug( 'Could not store service interest.', array( 'error' => $post_id->get_error_code() ) );
-			return 0;
-		}
-
-		$stored = array_merge(
-			$lead,
-			array(
-				'provider'   => $provider_id,
-				'status'     => 'pending',
-				'error_code' => '',
-			)
-		);
-
-		foreach ( $stored as $key => $value ) {
-			if ( 'consent' !== $key ) {
-				update_post_meta( $post_id, '_crm_service_interest_' . $key, $value );
-			}
-		}
-
-		update_post_meta( $post_id, '_crm_service_interest_consent_at', gmdate( 'c' ) );
-
-		return (int) $post_id;
-	}
-
-	private function update_interest_status( int $post_id, string $status, string $error_code ): void {
-		if ( 0 >= $post_id ) {
-			return;
-		}
-
-		update_post_meta( $post_id, '_crm_service_interest_status', $status );
-		update_post_meta( $post_id, '_crm_service_interest_error_code', $error_code );
-	}
-
-	/**
-	 * @param array<string, mixed> $request Submitted fields.
-	 * @return array<string, mixed>
-	 */
-	private function provider_context( string $provider_id, array $request ): array {
-		if ( 'rd_station' === $provider_id ) {
-			return array(
-				'conversion_identifier' => 'COO as a Service - Interesse',
-				'tags'                  => $this->settings->rd_station_default_tags(),
-				'analytics_device_id'   => $this->clean_analytics_device_id( $request['analytics_device_id'] ?? '' ),
-			);
-		}
-
-		return array( 'list_id' => $this->settings->brevo_default_list_id() );
-	}
-
-	private function provider_failure_code( string $provider_id, CRM_Leads_Capture_Result $result ): string {
-		$data = $result->data();
-		$code = isset( $data['error_summary']['code'] ) && is_string( $data['error_summary']['code'] ) ? $data['error_summary']['code'] : '';
-
-		if ( 'rd_station' === $provider_id ) {
-			if ( in_array( $result->status_code(), array( 401, 403 ), true ) ) {
-				return 'rd_station_permission_error';
-			}
-
-			return 400 === $result->status_code() ? 'rd_station_bad_request' : 'rd_station_error';
-		}
-
-		$codes = array(
-			'invalid_parameter'   => 'brevo_invalid_parameter',
-			'missing_parameter'   => 'brevo_missing_parameter',
-			'duplicate_parameter' => 'brevo_duplicate_parameter',
-			'document_not_found' => 'brevo_document_not_found',
-			'unauthorized'         => 'brevo_permission_error',
-			'permission_denied'    => 'brevo_permission_error',
-		);
-
-		return $codes[ $code ] ?? ( 400 === $result->status_code() ? 'brevo_bad_request' : 'brevo_error' );
-	}
-
-	private function failure( string $code, int $lead_id = 0 ): CRM_Leads_Capture_Result {
-		return CRM_Leads_Capture_Result::failure(
-			0,
-			'Service interest capture failed.',
-			array(
-				'code'    => $code,
-				'lead_id' => $lead_id,
-				'message' => $this->error_message( $code ),
-			)
-		);
+	private function failure( string $code ): CRM_Leads_Capture_Result {
+		return CRM_Leads_Capture_Result::failure( 422, 'Service interest capture failed.', array( 'code' => $code, 'message' => $this->error_message( $code ) ) );
 	}
 
 	private function error_message( string $code ): string {
 		if ( 'invalid_nonce' === $code ) {
 			return __( 'Sua sessão expirou. Atualize a página e tente novamente.', 'crm-leads-capture' );
 		}
-
-		if ( 'invalid_lead' === $code ) {
+		if ( 'invalid_lead' === $code || 'invalid_fields' === $code ) {
 			return __( 'Revise os campos obrigatórios e tente novamente.', 'crm-leads-capture' );
 		}
-
 		if ( 'spam' === $code ) {
 			return __( 'Não foi possível validar o envio. Atualize a página e tente novamente.', 'crm-leads-capture' );
 		}
@@ -538,20 +252,14 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 		return __( 'Não foi possível enviar seus dados agora. Tente novamente mais tarde.', 'crm-leads-capture' );
 	}
 
-	/**
-	 * @param array<string, mixed> $request Submitted fields.
-	 */
+	/** @param array<string, mixed> $request */
 	private function fallback_redirect_url( array $request, string $status, string $code ): string {
 		$url = esc_url_raw( $this->clean_string( $request['page_url'] ?? '' ) );
 		if ( '' === $url ) {
 			$referer = wp_get_referer();
 			$url     = is_string( $referer ) ? $referer : home_url( '/' );
 		}
-
-		$args = array(
-			'crm_leads_capture' => $status,
-			'capture_type'      => 'service_interest',
-		);
+		$args = array( 'crm_leads_capture' => $status, 'capture_type' => 'service_interest' );
 		if ( '' !== $code ) {
 			$args['crm_error'] = $code;
 		}
@@ -559,9 +267,7 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 		return add_query_arg( $args, $url ) . '#conversar';
 	}
 
-	/**
-	 * @param array<string, string> $message Message data.
-	 */
+	/** @param array<string, string> $message */
 	private function message_markup( array $message ): string {
 		$tone   = $message['tone'] ?? 'danger';
 		$label  = $message['label'] ?? '';
@@ -571,14 +277,8 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 		return '<div class="crm-leads-capture-message" data-crm-leads-capture-message data-feedback-tone="' . esc_attr( $tone ) . '" role="status" aria-live="polite" tabindex="-1"' . $hidden . '><span class="crm-leads-capture-message__badge">' . esc_html( $label ) . '</span><p class="crm-leads-capture-message__text">' . esc_html( $text ) . '</p></div>';
 	}
 
-	private function is_valid_nonce( $nonce ): bool {
-		$nonce = $this->clean_string( $nonce );
-
-		return '' !== $nonce && false !== wp_verify_nonce( $nonce, self::NONCE_ACTION );
-	}
-
 	private function clean_analytics_device_id( $value ): string {
-		$value = $this->scalar_string( $value );
+		$value = is_scalar( $value ) ? (string) $value : '';
 
 		return substr( (string) preg_replace( '/[^A-Za-z0-9._:-]/', '', $value ), 0, 128 );
 	}
@@ -590,18 +290,11 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 	}
 
 	private function clean_string( $value ): string {
-		return sanitize_text_field( $this->scalar_string( $value ) );
+		return sanitize_text_field( is_scalar( $value ) ? (string) $value : '' );
 	}
 
-	private function scalar_string( $value ): string {
-		return is_scalar( $value ) ? (string) $value : '';
-	}
-
-	/**
-	 * @param array<string, mixed> $value Raw request.
-	 * @return array<string, mixed>
-	 */
+	/** @param array<string, mixed> $value @return array<string, mixed> */
 	private function unslash_array( array $value ): array {
-		return function_exists( 'wp_unslash' ) ? wp_unslash( $value ) : $value;
+		return wp_unslash( $value );
 	}
 }

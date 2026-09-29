@@ -213,6 +213,25 @@ class CRM_Leads_Capture_Brevo_Provider implements CRM_Leads_Capture_Provider_Int
 			}
 		}
 
+		$trusted = isset( $payload['context'] ) && is_array( $payload['context'] ) ? $payload['context'] : array();
+		foreach ( $map as $path => $attribute ) {
+			if ( ! is_string( $path ) || ! str_starts_with( $path, 'context.' ) ) {
+				continue;
+			}
+
+			$key   = substr( $path, strlen( 'context.' ) );
+			$value = $trusted[ $key ] ?? '';
+			if ( $this->is_empty_value( $value ) ) {
+				continue;
+			}
+			if ( ! is_string( $attribute ) || 1 !== preg_match( '/^[A-Z][A-Z0-9_]*$/', $attribute ) || isset( $mapped_targets[ $attribute ] ) || ! is_scalar( $value ) ) {
+				return CRM_Leads_Capture_Result::failure( 0, 'Brevo context attribute mapping is invalid.', array( 'code' => 'invalid_payload' ) );
+			}
+
+			$mapped_targets[ $attribute ] = true;
+			$attributes[ $attribute ]     = $value;
+		}
+
 		return CRM_Leads_Capture_Result::success( 200, '', array( 'attributes' => $attributes ) );
 	}
 

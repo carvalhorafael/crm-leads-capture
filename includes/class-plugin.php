@@ -43,6 +43,7 @@ class CRM_Leads_Capture_Plugin {
 		$this->providers->register( new CRM_Leads_Capture_Brevo_Provider( $this->settings ) );
 		$this->providers->register( new CRM_Leads_Capture_RD_Station_Provider( $this->settings ) );
 		$this->capture_profiles = new CRM_Leads_Capture_Profile_Registry();
+		( new CRM_Leads_Capture_Profile_Defaults( $this->settings ) )->register( $this->capture_profiles );
 		$this->profile_repository = new CRM_Leads_Capture_Profile_Repository( $this->settings );
 		$this->profile_repository->register_profiles( $this->capture_profiles );
 		$this->capture_processor = new CRM_Leads_Capture_Processor(
@@ -57,7 +58,14 @@ class CRM_Leads_Capture_Plugin {
 		$this->profile_admin = new CRM_Leads_Capture_Profile_Admin( $this->profile_repository, $this->settings );
 
 		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
-		$this->service_interest_capture = new CRM_Leads_Capture_Service_Interest_Capture( $this->settings, $this->providers, null, $this->logger );
+		$this->service_interest_capture = new CRM_Leads_Capture_Service_Interest_Capture(
+			$this->settings,
+			$this->providers,
+			null,
+			$this->logger,
+			$this->capture_profiles,
+			$this->capture_processor
+		);
 		$this->github_updater        = new CRM_Leads_Capture_GitHub_Updater( CRM_LEADS_CAPTURE_FILE, CRM_LEADS_CAPTURE_VERSION );
 	}
 

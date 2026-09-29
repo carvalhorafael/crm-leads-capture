@@ -3,8 +3,9 @@
 O núcleo genérico representa cada formulário por um perfil de captura. O
 [contrato genérico de frontend](capture-frontend.md) já permite que novos
 formulários usem REST com aprimoramento progressivo ou `admin-post.php` sem
-JavaScript. Os formulários existentes serão migrados quando seus adaptadores de
-compatibilidade estiverem prontos.
+JavaScript. Materiais gratuitos e o formulário legado de COO já passam por
+adaptadores do pipeline; os perfis comerciais nativos também atendem novos
+templates diretamente.
 
 ## Contratos
 

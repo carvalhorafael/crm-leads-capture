@@ -49,6 +49,7 @@ class BrevoProviderTest extends TestCase {
 					'custom_fields.company'   => 'COMPANY',
 					'custom_fields.team_size' => 'TEAM_SIZE',
 					'consent.consent'         => 'PRIVACY_CONSENT',
+					'context.page_url'        => 'PAGE_URL',
 				),
 			)
 		);
@@ -64,6 +65,7 @@ class BrevoProviderTest extends TestCase {
 		$this->assertSame( 'Acme', $this->request_payload['attributes']['COMPANY'] );
 		$this->assertSame( 12, $this->request_payload['attributes']['TEAM_SIZE'] );
 		$this->assertTrue( $this->request_payload['attributes']['PRIVACY_CONSENT'] );
+		$this->assertSame( 'https://example.com/coo', $this->request_payload['attributes']['PAGE_URL'] );
 	}
 
 	public function test_maps_speaker_profile_fields_to_configured_attributes(): void {
@@ -245,7 +247,10 @@ class BrevoProviderTest extends TestCase {
 				'company'   => 'Acme',
 				'team_size' => 12,
 			),
-			'context' => array( 'source' => 'coo_as_a_service' ),
+			'context' => array(
+				'source'   => 'coo_as_a_service',
+				'page_url' => 'https://example.com/coo',
+			),
 		);
 	}
 }

@@ -49,6 +49,7 @@ require_once dirname( __DIR__ ) . '/includes/class-provider-registry.php';
 require_once dirname( __DIR__ ) . '/includes/class-capture-field.php';
 require_once dirname( __DIR__ ) . '/includes/class-capture-profile.php';
 require_once dirname( __DIR__ ) . '/includes/class-capture-profile-registry.php';
+require_once dirname( __DIR__ ) . '/includes/class-capture-profile-defaults.php';
 require_once dirname( __DIR__ ) . '/includes/class-capture-submission.php';
 require_once dirname( __DIR__ ) . '/includes/class-capture-processor.php';
 require_once dirname( __DIR__ ) . '/includes/class-brevo-client.php';

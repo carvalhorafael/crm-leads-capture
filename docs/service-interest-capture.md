@@ -1,34 +1,74 @@
-# Captura de interesse em serviços
+# Capturas comerciais
 
-O plugin oferece um contrato específico para páginas de serviços. O tema renderiza a experiência; o plugin valida, registra o interesse no WordPress e envia o contato ao provider ativo.
+O plugin registra dois perfis comerciais nativos e envia suas submissões
+diretamente ao provider global ativo. Nenhum lead, consentimento ou outro dado
+pessoal é persistido no WordPress.
 
-## Formulário
+## Perfis e campos
 
-O formulário envia `POST` para `admin-post.php` com:
+`coo-as-a-service` recebe:
 
-- `action=crm_leads_capture_service_interest`;
-- nonce da action `crm_leads_capture_service_interest`;
-- honeypot `crm_leads_capture_website` vazio;
-- `name`, `email`, `company`, `role`, `challenge` e `consent=1`;
-- `whatsapp`, `company_url`, `page_url` e UTMs quando disponíveis.
+- `name`, `email` e `whatsapp`;
+- `company`, `role`, `company_url` e `challenge`;
+- `consent`;
+- `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content` e
+  `utm_name`.
 
-Papéis aceitos: `founder`, `ceo` e `executive`.
+`role` aceita `founder`, `ceo` ou `executive`.
 
-O helper `crm_leads_capture_service_interest_nonce_field()` renderiza o nonce. O helper `crm_leads_capture_render_service_interest_message()` renderiza o container de feedback e mensagens do fallback sem JavaScript.
+`speaker-invitation` recebe:
 
-## Progressive enhancement
+- `name`, `email` e `whatsapp`;
+- `organization`, `event_name`, `objective_context`, `audience_profile`,
+  `audience_size`, `event_date`, `location` e `format`;
+- `consent` e as mesmas UTMs do perfil de COO.
 
-O script do plugin intercepta apenas formulários com a action de interesse em serviço. Ele busca um nonce fresco em `GET /wp-json/crm-leads-capture/v1/service-interest/nonce` e envia o conteúdo para `POST /wp-json/crm-leads-capture/v1/service-interest`.
+`event_date` usa `AAAA-MM-DD`; `format` aceita `presencial`, `online` ou
+`hibrido`. A URL da página de origem é resolvida pelo adaptador no servidor e
+não precisa ser um campo editável.
 
-Sucesso e falha são anunciados no container com `aria-live`. Se o endpoint de nonce estiver indisponível, o formulário volta ao fluxo `admin-post.php`.
+## Contrato dos templates
 
-## Registro administrativo
+Os templates novos devem usar o [contrato genérico de frontend](capture-frontend.md):
 
-Cada submissão validada cria um registro privado do tipo `crm_service_interest`, visível apenas para administradores em Configurações > Interesses em serviços. O registro preserva qualificação, consentimento, origem, UTMs, provider e status de envio.
+```php
+<form
+	method="post"
+	action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
+	data-crm-leads-capture="coo-as-a-service"
+>
+	<?php crm_leads_capture_form_fields( 'coo-as-a-service' ); ?>
+	<!-- campos com os nomes declarados acima -->
+	<?php crm_leads_capture_render_message( 'coo-as-a-service' ); ?>
+</form>
+```
 
-O contato básico também é enviado ao provider ativo:
+Para convites, o mesmo markup usa `speaker-invitation` nos dois pontos. Cada
+perfil devolve sua própria mensagem de sucesso. Falhas do CRM mantêm o
+formulário na página e exibem somente uma mensagem pública controlada.
 
-- Brevo usa a lista padrão configurada;
-- RD Station usa a conversão `COO as a Service - Interesse` e as tags padrão.
+## Mapeamento dos CRMs
 
-Detalhes de qualificação permanecem no WordPress para não depender de atributos personalizados previamente configurados no CRM.
+Os dois perfis trazem mapeamentos padrão para todos os campos:
+
+- Brevo usa a lista global quando o perfil ou a página não define outra e
+  envia qualificação, consentimento e página de origem como atributos;
+- RD Station usa conversão e tags próprias de cada perfil e envia os campos de
+  qualificação, consentimento, origem e UTMs no evento.
+
+Os atributos personalizados precisam existir no CRM com os identificadores
+documentados na configuração dos perfis. Overrides associados a uma página
+continuam tendo precedência sobre os padrões nativos.
+
+## Compatibilidade temporária do COO
+
+O contrato antigo continua disponível durante a migração do tema:
+
+- action `crm_leads_capture_service_interest`;
+- helper `crm_leads_capture_service_interest_nonce_field()`;
+- helper `crm_leads_capture_render_service_interest_message()`;
+- endpoints `/service-interest` e `/service-interest/nonce`.
+
+Esse adaptador encaminha a submissão ao perfil `coo-as-a-service`. Ele não
+registra o post type histórico `crm_service_interest`, não cria tela
+administrativa, não grava metadados e não chama APIs de persistência de posts.
