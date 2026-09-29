@@ -18,6 +18,10 @@ class CRM_Leads_Capture_Plugin {
 
 	private CRM_Leads_Capture_Provider_Registry $providers;
 
+	private CRM_Leads_Capture_Profile_Registry $capture_profiles;
+
+	private CRM_Leads_Capture_Processor $capture_processor;
+
 	private CRM_Leads_Capture_Free_Material_Capture $free_material_capture;
 
 	private CRM_Leads_Capture_Service_Interest_Capture $service_interest_capture;
@@ -32,6 +36,14 @@ class CRM_Leads_Capture_Plugin {
 		$this->providers = new CRM_Leads_Capture_Provider_Registry();
 		$this->providers->register( new CRM_Leads_Capture_Brevo_Provider( $this->settings ) );
 		$this->providers->register( new CRM_Leads_Capture_RD_Station_Provider( $this->settings ) );
+		$this->capture_profiles = new CRM_Leads_Capture_Profile_Registry();
+		$this->capture_processor = new CRM_Leads_Capture_Processor(
+			$this->capture_profiles,
+			$this->providers,
+			fn(): string => $this->settings->active_provider(),
+			static fn( string $nonce, string $action ): bool => false !== wp_verify_nonce( $nonce, $action ),
+			$this->logger
+		);
 
 		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
 		$this->service_interest_capture = new CRM_Leads_Capture_Service_Interest_Capture( $this->settings, $this->providers, null, $this->logger );
@@ -87,6 +99,14 @@ class CRM_Leads_Capture_Plugin {
 
 	public function providers(): CRM_Leads_Capture_Provider_Registry {
 		return $this->providers;
+	}
+
+	public function capture_profiles(): CRM_Leads_Capture_Profile_Registry {
+		return $this->capture_profiles;
+	}
+
+	public function capture_processor(): CRM_Leads_Capture_Processor {
+		return $this->capture_processor;
 	}
 
 	public function github_updater(): CRM_Leads_Capture_GitHub_Updater {

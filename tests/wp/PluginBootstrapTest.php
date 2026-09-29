@@ -18,6 +18,8 @@ class PluginBootstrapTest extends WP_UnitTestCase {
 		$this->assertTrue( defined( 'CRM_LEADS_CAPTURE_DIR' ) );
 		$this->assertTrue( function_exists( 'crm_leads_capture' ) );
 		$this->assertInstanceOf( CRM_Leads_Capture_Logger::class, crm_leads_capture()->logger() );
+		$this->assertInstanceOf( CRM_Leads_Capture_Profile_Registry::class, crm_leads_capture()->capture_profiles() );
+		$this->assertInstanceOf( CRM_Leads_Capture_Processor::class, crm_leads_capture()->capture_processor() );
 	}
 
 	public function test_plugin_registers_textdomain_loader(): void {
