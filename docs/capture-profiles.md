@@ -51,3 +51,5 @@ Para o destino Brevo, consulte o
 [mapeamento de listas e atributos por perfil](brevo-profile-mapping.md).
 Para o RD Station, consulte o
 [mapeamento de conversão, tags e campos por perfil](rd-station-profile-mapping.md).
+A criação e associação desses perfis está descrita em
+[administração de perfis e páginas](capture-profile-administration.md).

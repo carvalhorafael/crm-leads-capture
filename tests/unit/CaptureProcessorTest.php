@@ -170,6 +170,30 @@ class CaptureProcessorTest extends TestCase {
 		$this->assertSame( 'coo', $this->provider->last_context['capture_profile'] );
 	}
 
+	public function test_applies_server_resolved_page_override_without_exposing_it_in_submission(): void {
+		$result = $this->processor->process(
+			'coo',
+			array(
+				'_wpnonce' => 'valid',
+				'name'      => 'Rafael',
+				'email'     => 'rafael@example.com',
+				'consent'   => 'yes',
+				'company'   => 'Acme',
+			),
+			array(
+				'page_id' => 42,
+				'provider_overrides' => array(
+					'brevo' => array( 'list_ids' => array( 90 ) ),
+				),
+			)
+		);
+
+		$this->assertTrue( $result->is_successful() );
+		$this->assertSame( array( 90 ), $this->provider->last_context['list_ids'] );
+		$this->assertSame( 42, $this->provider->last_payload['context']['page_id'] );
+		$this->assertArrayNotHasKey( 'provider_overrides', $this->provider->last_payload['context'] );
+	}
+
 	public function test_rejects_invalid_nonce_and_honeypot_before_provider_call(): void {
 		$result = $this->processor->process( 'coo', array( '_wpnonce' => 'invalid' ) );
 		$this->assertFalse( $result->is_successful() );

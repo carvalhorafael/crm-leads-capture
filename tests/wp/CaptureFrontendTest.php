@@ -61,6 +61,8 @@ class CaptureFrontendTest extends WP_UnitTestCase {
 
 	private CRM_Leads_Capture_Frontend $frontend;
 
+	private CRM_Leads_Capture_Processor $processor;
+
 	public function set_up(): void {
 		parent::set_up();
 
@@ -87,14 +89,14 @@ class CaptureFrontendTest extends WP_UnitTestCase {
 		$this->provider = new CRM_Leads_Capture_Frontend_Test_Provider();
 		$providers      = new CRM_Leads_Capture_Provider_Registry();
 		$providers->register( $this->provider );
-		$processor = new CRM_Leads_Capture_Processor(
+		$this->processor = new CRM_Leads_Capture_Processor(
 			$profiles,
 			$providers,
 			static fn(): string => 'brevo',
 			static fn( string $nonce, string $action ): bool => false !== wp_verify_nonce( $nonce, $action )
 		);
 
-		$this->frontend = new CRM_Leads_Capture_Frontend( $profiles, $processor, new CRM_Leads_Capture_Settings() );
+		$this->frontend = new CRM_Leads_Capture_Frontend( $profiles, $this->processor, new CRM_Leads_Capture_Settings() );
 	}
 
 	public function tear_down(): void {
@@ -241,6 +243,50 @@ class CaptureFrontendTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'RD Station', $script );
 		$this->assertStringNotContainsString( 'list_id', $script );
 		$this->assertStringNotContainsString( 'conversion_identifier', $script );
+	}
+
+	public function test_page_override_is_resolved_from_association_instead_of_browser_destination(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array( 'active_provider' => 'brevo' )
+		);
+		$page_id    = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$repository = new CRM_Leads_Capture_Profile_Repository( new CRM_Leads_Capture_Settings() );
+		update_post_meta( $page_id, CRM_Leads_Capture_Profile_Repository::PAGE_PROFILE_META, 'generic-test' );
+		update_post_meta( $page_id, CRM_Leads_Capture_Profile_Repository::PAGE_OVERRIDE_ENABLED_META, '1' );
+		update_post_meta(
+			$page_id,
+			CRM_Leads_Capture_Profile_Repository::PAGE_OVERRIDES_META,
+			array( 'brevo' => array( 'list_ids' => array( 456 ) ) )
+		);
+		$frontend = new CRM_Leads_Capture_Frontend(
+			$this->profile_registry(),
+			$this->processor,
+			new CRM_Leads_Capture_Settings(),
+			$repository
+		);
+
+		$result = $frontend->process_submission(
+			'generic-test',
+			array(
+				'_wpnonce' => wp_create_nonce( $this->profile->nonce_action() ),
+				CRM_Leads_Capture_Frontend::PAGE_FIELD => $page_id,
+				'name'  => 'Rafael',
+				'email' => 'rafael@example.com',
+				'list_id' => 999,
+			)
+		);
+
+		$this->assertTrue( $result->is_successful() );
+		$this->assertSame( array( 456 ), $this->provider->last_context['list_ids'] );
+		$this->assertSame( $page_id, $this->provider->last_payload['context']['page_id'] );
+	}
+
+	private function profile_registry(): CRM_Leads_Capture_Profile_Registry {
+		$registry = new CRM_Leads_Capture_Profile_Registry();
+		$registry->register( $this->profile );
+
+		return $registry;
 	}
 
 	/**

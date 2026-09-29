@@ -103,6 +103,9 @@ class CRM_Leads_Capture_Processor {
 			);
 		}
 
+		$provider_overrides = isset( $trusted_context['provider_overrides'] ) && is_array( $trusted_context['provider_overrides'] ) ? $trusted_context['provider_overrides'] : array();
+		unset( $trusted_context['provider_overrides'] );
+
 		$submission = new CRM_Leads_Capture_Submission(
 			$profile->slug(),
 			$groups[ CRM_Leads_Capture_Field::GROUP_LEAD ],
@@ -124,10 +127,15 @@ class CRM_Leads_Capture_Processor {
 			return $this->failure( 503, 'provider_unavailable' );
 		}
 
+		$provider_config = $profile->provider_config( $provider_id );
+		if ( isset( $provider_overrides[ $provider_id ] ) && is_array( $provider_overrides[ $provider_id ] ) ) {
+			$provider_config = array_replace( $provider_config, $provider_overrides[ $provider_id ] );
+		}
+
 		$provider_result = $provider->send_lead(
 			$submission->to_array(),
 			array_merge(
-				$profile->provider_config( $provider_id ),
+				$provider_config,
 				array(
 					'capture_profile'   => $profile->slug(),
 					'submission_context' => array_merge( $profile->context(), $trusted_context ),

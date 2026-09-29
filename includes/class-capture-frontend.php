@@ -13,6 +13,7 @@ class CRM_Leads_Capture_Frontend {
 	public const ACTION = 'crm_leads_capture_submit';
 	public const PROFILE_FIELD = 'crm_leads_capture_profile';
 	public const REST_NONCE_FIELD = 'crm_leads_capture_nonce';
+	public const PAGE_FIELD = 'crm_leads_capture_page_id';
 	public const REST_NAMESPACE = 'crm-leads-capture/v1';
 	public const REST_ROUTE = '/capture/(?P<profile>[a-z0-9_-]+)';
 	public const REST_NONCE_ROUTE = '/capture/(?P<profile>[a-z0-9_-]+)/nonce';
@@ -23,14 +24,18 @@ class CRM_Leads_Capture_Frontend {
 
 	private CRM_Leads_Capture_Settings $settings;
 
+	private ?CRM_Leads_Capture_Profile_Repository $profile_repository;
+
 	public function __construct(
 		CRM_Leads_Capture_Profile_Registry $profiles,
 		CRM_Leads_Capture_Processor $processor,
-		CRM_Leads_Capture_Settings $settings
+		CRM_Leads_Capture_Settings $settings,
+		?CRM_Leads_Capture_Profile_Repository $profile_repository = null
 	) {
-		$this->profiles  = $profiles;
-		$this->processor = $processor;
-		$this->settings  = $settings;
+		$this->profiles           = $profiles;
+		$this->processor          = $processor;
+		$this->settings           = $settings;
+		$this->profile_repository = $profile_repository;
 	}
 
 	public function register_hooks(): void {
@@ -106,7 +111,7 @@ class CRM_Leads_Capture_Frontend {
 	 * @param array<string, mixed> $input Untrusted request fields.
 	 */
 	public function process_submission( string $profile_slug, array $input, string $referer = '' ): CRM_Leads_Capture_Result {
-		return $this->processor->process( $profile_slug, $input, $this->trusted_context( $referer ) );
+		return $this->processor->process( $profile_slug, $input, $this->trusted_context( $profile_slug, $input, $referer ) );
 	}
 
 	public function handle_admin_post(): void {
@@ -130,8 +135,12 @@ class CRM_Leads_Capture_Frontend {
 			return '';
 		}
 
+		$page_id    = function_exists( 'get_queried_object_id' ) ? (int) get_queried_object_id() : 0;
+		$page_field = 0 < $page_id ? '<input type="hidden" name="' . esc_attr( self::PAGE_FIELD ) . '" value="' . esc_attr( (string) $page_id ) . '">' : '';
+
 		return '<input type="hidden" name="action" value="' . esc_attr( self::ACTION ) . '">'
 			. '<input type="hidden" name="' . esc_attr( self::PROFILE_FIELD ) . '" value="' . esc_attr( $profile->slug() ) . '">'
+			. $page_field
 			. wp_nonce_field( $profile->nonce_action(), $profile->nonce_field(), true, false )
 			. '<input type="text" name="' . esc_attr( $profile->honeypot_field() ) . '" value="" tabindex="-1" autocomplete="off" aria-hidden="true" class="crm-leads-capture-honeypot">';
 	}
@@ -270,14 +279,30 @@ class CRM_Leads_Capture_Frontend {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private function trusted_context( string $referer ): array {
+	private function trusted_context( string $profile_slug, array $input, string $referer ): array {
 		$referer = $this->clean_url( $referer );
-		$page_id = '' !== $referer ? url_to_postid( $referer ) : 0;
+		$page_id = isset( $input[ self::PAGE_FIELD ] ) && is_scalar( $input[ self::PAGE_FIELD ] ) ? absint( $input[ self::PAGE_FIELD ] ) : 0;
+		if ( 0 >= $page_id && '' !== $referer ) {
+			$page_id = url_to_postid( $referer );
+		}
+
+		$provider_overrides = array();
+		if ( null !== $this->profile_repository && ( 'page' !== get_post_type( $page_id ) || $profile_slug !== $this->profile_repository->page_profile_slug( $page_id ) ) ) {
+			$page_id = 0;
+		}
+		if ( null !== $this->profile_repository && 0 < $page_id ) {
+			$provider = $this->settings->active_provider();
+			$override = $this->profile_repository->page_provider_overrides( $page_id, $provider );
+			if ( array() !== $override ) {
+				$provider_overrides[ $provider ] = $override;
+			}
+		}
 
 		return array_filter(
 			array(
 				'page_id'  => 0 < $page_id ? $page_id : null,
 				'page_url' => '' !== $referer ? $referer : null,
+				'provider_overrides' => array() !== $provider_overrides ? $provider_overrides : null,
 			),
 			static fn( $value ): bool => null !== $value
 		);

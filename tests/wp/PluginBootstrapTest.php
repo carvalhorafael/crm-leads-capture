@@ -21,6 +21,7 @@ class PluginBootstrapTest extends WP_UnitTestCase {
 		$this->assertInstanceOf( CRM_Leads_Capture_Profile_Registry::class, crm_leads_capture()->capture_profiles() );
 		$this->assertInstanceOf( CRM_Leads_Capture_Processor::class, crm_leads_capture()->capture_processor() );
 		$this->assertInstanceOf( CRM_Leads_Capture_Frontend::class, crm_leads_capture()->frontend() );
+		$this->assertInstanceOf( CRM_Leads_Capture_Profile_Repository::class, crm_leads_capture()->profile_repository() );
 		$this->assertTrue( function_exists( 'crm_leads_capture_form_fields' ) );
 		$this->assertTrue( function_exists( 'crm_leads_capture_render_message' ) );
 	}
