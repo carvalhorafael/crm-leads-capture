@@ -338,11 +338,12 @@ class CRM_Leads_Capture_Free_Material_Capture {
 	 */
 	public function process_submission( array $request ): CRM_Leads_Capture_Result {
 		$material_id = $this->absint( $request['material_id'] ?? 0 );
-
 		if ( ! $this->is_valid_nonce( $request[ self::NONCE_FIELD ] ?? '' ) ) {
 			return $this->failure( 'invalid_nonce', $material_id );
 		}
-
+		if ( empty( $request[ self::HONEYPOT_FIELD ] ) && isset( $request[ self::LEGACY_HONEYPOT_FIELD ] ) ) {
+			$request[ self::HONEYPOT_FIELD ] = $request[ self::LEGACY_HONEYPOT_FIELD ];
+		}
 		if ( '' !== $this->clean_string( $request[ self::HONEYPOT_FIELD ] ?? '' ) ) {
 			return $this->failure( 'spam', $material_id );
 		}
@@ -356,42 +357,48 @@ class CRM_Leads_Capture_Free_Material_Capture {
 			return $this->failure( 'missing_delivery', $material_id );
 		}
 
-		$payload = $this->lead_input_from_request( $request );
-		$payload['source']   = 'free_material';
-		$payload['material'] = $this->material_label( $material_id );
+		$provider_id       = $this->settings->active_provider();
+		$profile           = $this->profile_for_material( $material_id, $request );
+		$profiles          = new CRM_Leads_Capture_Profile_Registry();
+		$profiles->register( $profile );
+		$recording_provider = new CRM_Leads_Capture_Recording_Provider( $this->provider( $provider_id ), $provider_id );
+		$providers          = new CRM_Leads_Capture_Provider_Registry();
+		$providers->register( $recording_provider );
+		$processor = new CRM_Leads_Capture_Processor(
+			$profiles,
+			$providers,
+			static fn(): string => $provider_id,
+			fn( string $nonce, string $action ): bool => $this->is_valid_nonce( $nonce ),
+			$this->logger,
+			null === $this->provider_factory
+				? fn( string $provider ): string => $this->settings->provider_configuration_error( $provider )
+				: null
+		);
 
-		if ( ! $this->is_valid_email( $payload['email'] ?? '' ) ) {
-			return $this->failure( 'invalid_lead', $material_id );
-		}
-
-		$provider_id = $this->settings->active_provider();
-		if ( null === $this->provider_factory ) {
-			$provider_configuration_error = $this->settings->provider_configuration_error( $provider_id );
-			if ( '' !== $provider_configuration_error ) {
-				return $this->failure( $provider_configuration_error, $material_id );
+		$result = $processor->process( $profile->slug(), $request );
+		if ( ! $result->is_successful() ) {
+			$code            = $this->clean_string( $result->data()['code'] ?? 'provider_error' );
+			$provider_result = $recording_provider->last_result();
+			if ( 'invalid_fields' === $code ) {
+				$code = 'invalid_lead';
+			} elseif ( null !== $provider_result ) {
+				$provider_code = $this->clean_string( $provider_result->data()['code'] ?? '' );
+				$code = in_array( $provider_code, array( 'missing_list', 'missing_conversion', 'invalid_payload' ), true )
+					? $provider_code
+					: $this->provider_failure_code( $provider_id, $provider_result );
+				$this->logger->debug(
+					'Free material CRM provider request failed.',
+					array(
+						'material_id'   => $material_id,
+						'provider'      => $provider_id,
+						'status_code'   => $provider_result->status_code(),
+						'field_names'   => array_keys( $profile->fields() ),
+						'error_summary' => $this->provider_error_summary( $provider_result ),
+					)
+				);
 			}
-		}
-		$provider    = $this->provider( $provider_id );
-		$context     = $this->provider_context( $material_id, $provider_id, $request );
 
-		if ( 'brevo' === $provider_id && empty( $context['list_id'] ) ) {
-			return $this->failure( 'missing_list', $material_id );
-		}
-
-		$provider_result = $provider->send_lead( $payload, $context );
-		if ( ! $provider_result->is_successful() ) {
-		$this->logger->debug(
-				'Free material CRM provider request failed.',
-				array(
-					'material_id'     => $material_id,
-					'provider'        => $provider_id,
-					'status_code'     => $provider_result->status_code(),
-					'payload_summary' => $this->payload_summary( $payload ),
-					'error_summary'   => $this->provider_error_summary( $provider_result ),
-				)
-			);
-
-			return $this->failure( $this->provider_failure_code( $provider_id, $provider_result ), $material_id );
+			return $this->failure( $code, $material_id );
 		}
 
 		return CRM_Leads_Capture_Result::success(
@@ -402,6 +409,55 @@ class CRM_Leads_Capture_Free_Material_Capture {
 				'material_id'              => $material_id,
 				'provider'                 => $provider_id,
 				'allow_external_redirect' => true,
+			)
+		);
+	}
+
+	/**
+	 * Builds the transient generic profile for an existing material.
+	 *
+	 * @param array<string, mixed> $request Current request for trusted adapter context.
+	 */
+	public function profile_for_material( int $material_id, array $request = array() ): CRM_Leads_Capture_Profile {
+		$provider_id = $this->settings->active_provider();
+		$config      = $this->provider_context( $material_id, $provider_id, $request );
+		$fields      = array(
+			new CRM_Leads_Capture_Field( 'name', array( 'group' => 'lead' ) ),
+			new CRM_Leads_Capture_Field( 'email', array( 'type' => 'email', 'group' => 'lead', 'required' => true ) ),
+			new CRM_Leads_Capture_Field( 'whatsapp', array( 'type' => 'phone', 'group' => 'lead' ) ),
+			new CRM_Leads_Capture_Field( 'utm_source', array( 'group' => 'tracking' ) ),
+			new CRM_Leads_Capture_Field( 'utm_medium', array( 'group' => 'tracking' ) ),
+			new CRM_Leads_Capture_Field( 'utm_campaign', array( 'group' => 'tracking' ) ),
+			new CRM_Leads_Capture_Field( 'utm_term', array( 'group' => 'tracking' ) ),
+		);
+		if ( 'rd_station' === $provider_id ) {
+			if ( '' === (string) ( $config['conversion_identifier'] ?? '' ) ) {
+				$config['conversion_identifier'] = $this->material_label( $material_id );
+			}
+			$config['field_map'] = array(
+				'context.source'   => 'cf_source',
+				'context.material' => 'cf_material',
+			);
+		} else {
+			$fields[] = new CRM_Leads_Capture_Field( 'utm_content', array( 'group' => 'tracking' ) );
+		}
+
+		return new CRM_Leads_Capture_Profile(
+			'free-material-' . $material_id,
+			$fields,
+			array(
+				'context' => array(
+					'source'   => 'free_material',
+					'material' => $this->material_label( $material_id ),
+				),
+				'providers' => array( $provider_id => $config ),
+				'success'   => array(
+					'message'      => $this->settings->success_message(),
+					'redirect_url' => $this->material_delivery_url( $material_id ),
+				),
+				'nonce_action'   => self::NONCE_ACTION,
+				'nonce_field'    => self::NONCE_FIELD,
+				'honeypot_field' => self::HONEYPOT_FIELD,
 			)
 		);
 	}
@@ -459,25 +515,6 @@ class CRM_Leads_Capture_Free_Material_Capture {
 		return $this->providers->active( $provider_id );
 	}
 
-	/**
-	 * @param array<string, mixed> $request
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function lead_input_from_request( array $request ): array {
-		$input = array(
-			'name'     => $request['name'] ?? '',
-			'email'    => $request['email'] ?? '',
-			'whatsapp' => $request['whatsapp'] ?? '',
-		);
-
-		foreach ( array( 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content' ) as $utm_field ) {
-			$input[ $utm_field ] = $request[ $utm_field ] ?? '';
-		}
-
-		return $input;
-	}
-
 	private function material_list_id( int $material_id ): int {
 		$list_id = $this->absint( get_post_meta( $material_id, self::META_LIST_ID, true ) );
 		if ( 0 >= $list_id ) {
@@ -530,9 +567,18 @@ class CRM_Leads_Capture_Free_Material_Capture {
 	 */
 	private function provider_context( int $material_id, string $provider_id, array $request = array() ): array {
 		if ( 'rd_station' === $provider_id ) {
+			$conversion_identifier = $this->clean_string( get_post_meta( $material_id, self::META_RD_STATION_CONVERSION_IDENTIFIER, true ) );
+			if ( '' === $conversion_identifier ) {
+				$conversion_identifier = $this->settings->rd_station_default_conversion_identifier();
+			}
+			$tags = $this->clean_string( get_post_meta( $material_id, self::META_RD_STATION_TAGS, true ) );
+			if ( '' === $tags ) {
+				$tags = $this->settings->rd_station_default_tags();
+			}
+
 			return array(
-				'conversion_identifier' => $this->clean_string( get_post_meta( $material_id, self::META_RD_STATION_CONVERSION_IDENTIFIER, true ) ),
-				'tags'                  => $this->clean_string( get_post_meta( $material_id, self::META_RD_STATION_TAGS, true ) ),
+				'conversion_identifier' => $conversion_identifier,
+				'tags'                  => $tags,
 				'analytics_device_id'   => $this->clean_analytics_device_id( $request['analytics_device_id'] ?? '' ),
 			);
 		}
@@ -585,25 +631,6 @@ class CRM_Leads_Capture_Free_Material_Capture {
 				'material_id'  => $material_id,
 				'message'      => $this->public_error_message( $code ),
 			)
-		);
-	}
-
-	/**
-	 * @param array<string, mixed> $payload
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function payload_summary( array $payload ): array {
-		return array(
-			'has_email'      => isset( $payload['email'] ) && '' !== $payload['email'],
-			'has_name'       => isset( $payload['name'] ) && '' !== $payload['name'],
-			'has_whatsapp'   => isset( $payload['whatsapp'] ) && '' !== $payload['whatsapp'],
-			'utm_keys'       => array_values(
-				array_filter(
-					array( 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content' ),
-					static fn( string $key ): bool => isset( $payload[ $key ] ) && '' !== $payload[ $key ]
-				)
-			),
 		);
 	}
 
@@ -711,7 +738,7 @@ class CRM_Leads_Capture_Free_Material_Capture {
 			return 403;
 		}
 
-		if ( in_array( $code, array( 'missing_list', 'missing_delivery', 'provider_disabled', 'provider_not_configured' ), true ) ) {
+		if ( in_array( $code, array( 'missing_list', 'missing_conversion', 'missing_delivery', 'provider_disabled', 'provider_not_configured' ), true ) ) {
 			return 500;
 		}
 
@@ -783,13 +810,6 @@ class CRM_Leads_Capture_Free_Material_Capture {
 		}
 
 		update_post_meta( $post_id, $key, $value );
-	}
-
-	private function is_valid_email( $value ): bool {
-		$email = is_array( $value ) || is_object( $value ) ? '' : strtolower( $this->clean_string( $value ) );
-		$email = function_exists( 'sanitize_email' ) ? sanitize_email( $email ) : (string) filter_var( $email, FILTER_SANITIZE_EMAIL );
-
-		return '' !== $email && ( function_exists( 'is_email' ) ? false !== is_email( $email ) : false !== filter_var( $email, FILTER_VALIDATE_EMAIL ) );
 	}
 
 	/**

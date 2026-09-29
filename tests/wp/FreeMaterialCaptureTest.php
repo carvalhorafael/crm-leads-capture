@@ -90,6 +90,27 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 				array( crm_leads_capture()->free_material_capture(), 'handle_request' )
 			)
 		);
+
+		$this->assertSame( 10, has_action( 'admin_post_nopriv_' . CRM_Leads_Capture_Free_Material_Capture::LEGACY_ACTION, array( crm_leads_capture()->free_material_capture(), 'handle_request' ) ) );
+		$this->assertSame( 10, has_action( 'admin_post_' . CRM_Leads_Capture_Free_Material_Capture::LEGACY_ACTION, array( crm_leads_capture()->free_material_capture(), 'handle_request' ) ) );
+	}
+
+	public function test_builds_transient_generic_profile_from_existing_material_metadata(): void {
+		$material_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_LIST_ID      => '456',
+				CRM_Leads_Capture_Free_Material_Capture::META_DELIVERY_URL => 'https://example.com/current-download',
+			)
+		);
+
+		$profile = $this->capture->profile_for_material( $material_id );
+
+		$this->assertSame( 'free-material-' . $material_id, $profile->slug() );
+		$this->assertSame( 456, $profile->provider_config( 'brevo' )['list_id'] );
+		$this->assertSame( 'free_material', $profile->context()['source'] );
+		$this->assertSame( 'Material Teste', $profile->context()['material'] );
+		$this->assertSame( 'https://example.com/current-download', $profile->success_behavior()['redirect_url'] );
+		$this->assertSame( CRM_Leads_Capture_Free_Material_Capture::NONCE_ACTION, $profile->nonce_action() );
 	}
 
 	public function test_processes_valid_free_material_submission(): void {
@@ -116,12 +137,12 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		$this->assertTrue( $result->is_successful() );
 		$this->assertSame( 'https://example.com/download', $result->data()['redirect_url'] );
 		$this->assertTrue( $result->data()['allow_external_redirect'] );
-		$this->assertSame( 'RAFAEL@example.com', $this->provider->last_payload['email'] );
+		$this->assertSame( 'rafael@example.com', $this->provider->last_payload['lead']['email'] );
 		$this->assertSame( 123, $this->provider->last_context['list_id'] );
-		$this->assertSame( 'free_material', $this->provider->last_payload['source'] );
-		$this->assertSame( 'Material Teste', $this->provider->last_payload['material'] );
-		$this->assertSame( 'linkedin', $this->provider->last_payload['utm_source'] );
-		$this->assertSame( 'material', $this->provider->last_payload['utm_campaign'] );
+		$this->assertSame( 'free_material', $this->provider->last_payload['context']['source'] );
+		$this->assertSame( 'Material Teste', $this->provider->last_payload['context']['material'] );
+		$this->assertSame( 'linkedin', $this->provider->last_payload['tracking']['utm_source'] );
+		$this->assertSame( 'material', $this->provider->last_payload['tracking']['utm_campaign'] );
 	}
 
 	public function test_rejects_invalid_nonce_without_calling_brevo(): void {
@@ -149,6 +170,28 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 			)
 		);
 
+		$this->assertFalse( $result->is_successful() );
+		$this->assertSame( 'spam', $result->data()['code'] );
+		$this->assertNull( $this->provider->last_payload );
+	}
+
+	public function test_accepts_legacy_nonce_and_rejects_legacy_honeypot(): void {
+		$material_id = $this->create_material();
+		$result      = $this->capture->process_submission(
+			$this->valid_request(
+				$material_id,
+				array( CRM_Leads_Capture_Free_Material_Capture::NONCE_FIELD => wp_create_nonce( CRM_Leads_Capture_Free_Material_Capture::LEGACY_NONCE_ACTION ) )
+			)
+		);
+		$this->assertTrue( $result->is_successful() );
+
+		$this->provider->last_payload = null;
+		$result = $this->capture->process_submission(
+			$this->valid_request(
+				$material_id,
+				array( CRM_Leads_Capture_Free_Material_Capture::LEGACY_HONEYPOT_FIELD => 'bot' )
+			)
+		);
 		$this->assertFalse( $result->is_successful() );
 		$this->assertSame( 'spam', $result->data()['code'] );
 		$this->assertNull( $this->provider->last_payload );
@@ -299,6 +342,70 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertTrue( $data['success'] );
 		$this->assertSame( 'https://example.com/download', $data['redirect_url'] );
+	}
+
+	public function test_rest_request_accepts_legacy_rest_nonce_field(): void {
+		$material_id = $this->create_material();
+		$request_data = $this->valid_request( $material_id );
+		$request      = new WP_REST_Request( 'POST', '/' . CRM_Leads_Capture_Free_Material_Capture::REST_NAMESPACE . CRM_Leads_Capture_Free_Material_Capture::REST_ROUTE );
+		$request_data[ CRM_Leads_Capture_Free_Material_Capture::LEGACY_REST_NONCE_FIELD ] = wp_create_nonce( CRM_Leads_Capture_Free_Material_Capture::LEGACY_NONCE_ACTION );
+		unset( $request_data[ CRM_Leads_Capture_Free_Material_Capture::NONCE_FIELD ] );
+		foreach ( $request_data as $key => $value ) {
+			$request->set_param( $key, $value );
+		}
+
+		$response = $this->capture->handle_rest_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertTrue( $response->get_data()['success'] );
+	}
+
+	public function test_material_fallback_order_preserves_current_and_legacy_metadata(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'providers'            => array( 'brevo' => array( 'default_list_id' => 999 ) ),
+				'default_delivery_url' => 'https://example.com/global',
+			)
+		);
+		$legacy_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_LIST_ID                  => '',
+				CRM_Leads_Capture_Free_Material_Capture::META_LEGACY_LIST_ID           => '321',
+				CRM_Leads_Capture_Free_Material_Capture::META_DELIVERY_URL             => '',
+				CRM_Leads_Capture_Free_Material_Capture::META_LEGACY_DELIVERY_URL_BREVO => 'https://example.com/brevo-legacy',
+				CRM_Leads_Capture_Free_Material_Capture::META_LEGACY_DELIVERY_URL       => 'https://example.com/theme-legacy',
+			)
+		);
+		$result = $this->capture->process_submission( $this->valid_request( $legacy_id ) );
+		$this->assertSame( 321, $this->provider->last_context['list_id'] );
+		$this->assertSame( 'https://example.com/brevo-legacy', $result->data()['redirect_url'] );
+
+		$current_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_LIST_ID                  => '123',
+				CRM_Leads_Capture_Free_Material_Capture::META_LEGACY_LIST_ID           => '321',
+				CRM_Leads_Capture_Free_Material_Capture::META_DELIVERY_URL             => 'https://example.com/current',
+				CRM_Leads_Capture_Free_Material_Capture::META_LEGACY_DELIVERY_URL_BREVO => 'https://example.com/brevo-legacy',
+			)
+		);
+		$result = $this->capture->process_submission( $this->valid_request( $current_id ) );
+		$this->assertSame( 123, $this->provider->last_context['list_id'] );
+		$this->assertSame( 'https://example.com/current', $result->data()['redirect_url'] );
+	}
+
+	public function test_submission_does_not_migrate_or_delete_material_metadata(): void {
+		$material_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_LEGACY_LIST_ID     => '321',
+				CRM_Leads_Capture_Free_Material_Capture::META_LEGACY_DELIVERY_URL => 'https://example.com/legacy',
+			)
+		);
+		$before = get_post_meta( $material_id );
+
+		$this->capture->process_submission( $this->valid_request( $material_id ) );
+
+		$this->assertSame( $before, get_post_meta( $material_id ) );
 	}
 
 	public function test_uses_legacy_delivery_url_fallback(): void {
@@ -494,6 +601,43 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( 'abc-123_XY.Z:0', $this->provider->last_context['analytics_device_id'] ?? null );
+	}
+
+	public function test_rd_station_destination_uses_material_then_global_then_title_fallbacks(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'rd_station',
+				'providers'       => array(
+					'rd_station' => array(
+						'default_conversion_identifier' => 'global-conversion',
+						'default_tags'                  => 'global, material',
+					),
+				),
+			)
+		);
+		$global_id = $this->create_material();
+		$this->capture->process_submission( $this->valid_request( $global_id ) );
+		$this->assertSame( 'global-conversion', $this->provider->last_context['conversion_identifier'] );
+		$this->assertSame( 'global, material', $this->provider->last_context['tags'] );
+
+		$material_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_RD_STATION_CONVERSION_IDENTIFIER => 'material-conversion',
+				CRM_Leads_Capture_Free_Material_Capture::META_RD_STATION_TAGS => 'specific',
+			)
+		);
+		$this->capture->process_submission( $this->valid_request( $material_id ) );
+		$this->assertSame( 'material-conversion', $this->provider->last_context['conversion_identifier'] );
+		$this->assertSame( 'specific', $this->provider->last_context['tags'] );
+
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array( 'active_provider' => 'rd_station' )
+		);
+		$title_id = $this->create_material();
+		$this->capture->process_submission( $this->valid_request( $title_id ) );
+		$this->assertSame( 'Material Teste', $this->provider->last_context['conversion_identifier'] );
 	}
 
 	/**

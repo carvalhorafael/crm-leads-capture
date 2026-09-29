@@ -22,6 +22,9 @@ Campo `action`:
 <input type="hidden" name="action" value="crm_leads_capture_free_material">
 ```
 
+O valor legado `brevo_leads_capture_free_material` continua registrado para
+templates existentes.
+
 ## Campos esperados
 
 - `action`: `crm_leads_capture_free_material`
@@ -51,24 +54,40 @@ Exemplo:
 wp_nonce_field( 'crm_leads_capture_free_material' );
 ```
 
+Nonces criados com a action legada `brevo_leads_capture_free_material` também
+continuam válidos. O honeypot legado `brevo_leads_capture_website` é aceito com
+o mesmo comportamento do campo atual.
+
 ## Metadados do material
 
-O plugin lê os seguintes metadados:
+O plugin resolve a lista Brevo nesta ordem:
 
-- `_crm_leads_capture_list_id`: ID da lista Brevo.
-- `_crm_leads_capture_delivery_url`: URL de entrega após captura bem-sucedida. Pode ser uma URL externa quando o material deve levar para outro domínio.
+1. `_crm_leads_capture_list_id`;
+2. `_brevo_leads_capture_list_id`;
+3. lista Brevo padrão do plugin, incluindo opções e constantes legadas.
 
-Fallback temporário para compatibilidade com o tema:
+A URL de entrega segue esta ordem:
 
-- `_executive_signal_material_capture_url`: usado como URL de entrega quando `_crm_leads_capture_delivery_url` não está preenchido.
+1. `_crm_leads_capture_delivery_url`;
+2. `_brevo_leads_capture_delivery_url`;
+3. `_executive_signal_material_capture_url`;
+4. URL de entrega padrão do plugin.
+
+Para RD Station, o identificador de conversão usa primeiro
+`_crm_leads_capture_rd_station_conversion_identifier`, depois o padrão global e,
+por último, o título do material. As tags usam primeiro
+`_crm_leads_capture_rd_station_tags` e depois as tags globais.
+
+Esses fallbacks são somente leitura. O envio não migra, renomeia nem remove
+metadados existentes.
 
 ## Fluxo
 
 1. Valida nonce.
 2. Rejeita honeypot preenchido.
 3. Valida `material_id`.
-4. Resolve o provider global e lê o destino e a URL de entrega.
-5. Normaliza nome, email, WhatsApp e UTMs.
+4. Monta em memória um perfil transitório a partir do post e dos metadados.
+5. O processador genérico normaliza nome, email, WhatsApp e UTMs.
 6. Envia o contato ao provider global. Na Brevo, contatos existentes continuam
    usando `updateEnabled: true`.
 7. Redireciona para a URL de entrega em sucesso.
@@ -158,8 +177,9 @@ desabilitado para obter um nonce fresco. No envio REST, esse valor é enviado em
 falhas quando o HTML do formulário foi servido por cache com um nonce antigo e
 também evita que a REST API bloqueie a chamada antes do handler do plugin.
 
-O endpoint POST recebe os mesmos campos do formulário e executa a mesma
-validação de nonce, honeypot, material, payload e envio para Brevo. Em sucesso,
+O endpoint POST recebe os mesmos campos do formulário e executa o mesmo
+adaptador sobre o processador genérico, preservando validação, entrega e
+mensagens públicas. Em sucesso,
 retorna:
 
 ```json
