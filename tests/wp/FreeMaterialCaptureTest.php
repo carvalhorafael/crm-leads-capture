@@ -350,7 +350,9 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		$this->capture->render_material_meta_box( $post );
 		$output = (string) ob_get_clean();
 
-		$this->assertStringContainsString( 'Provider efetivo: RD Station.', $output );
+		$this->assertStringContainsString( 'Provider global', $output );
+		$this->assertStringContainsString( 'RD Station', $output );
+		$this->assertStringNotContainsString( 'crm_leads_capture_material_provider', $output );
 		$this->assertStringContainsString( 'Identificador de conversão', $output );
 		$this->assertStringContainsString( 'Tags', $output );
 		$this->assertStringContainsString( 'Se ficar em branco, será usada a URL de entrega configurada no plugin.', $output );
@@ -358,6 +360,85 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Tags adicionadas ao lead para segmentação e automações.', $output );
 		$this->assertStringNotContainsString( 'Conversão RD Station</strong>', $output );
 		$this->assertStringNotContainsString( 'Tags RD Station</strong>', $output );
+	}
+
+	public function test_legacy_provider_override_is_preserved_but_ignored(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array( 'active_provider' => 'rd_station' )
+		);
+		$material_id = $this->create_material(
+			array( CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'brevo' )
+		);
+
+		$result = $this->capture->process_submission(
+			$this->valid_request( $material_id, array( 'analytics_device_id' => 'device-123' ) )
+		);
+
+		$this->assertTrue( $result->is_successful() );
+		$this->assertSame( 'rd_station', $result->data()['provider'] );
+		$this->assertSame( 'device-123', $this->provider->last_context['analytics_device_id'] );
+		$this->assertSame( 'brevo', get_post_meta( $material_id, CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER, true ) );
+
+		$administrator_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $administrator_id );
+		$_POST = array(
+			'crm_leads_capture_material_meta_nonce' => wp_create_nonce( 'crm_leads_capture_material_meta' ),
+			'crm_leads_capture_material_provider'   => 'rd_station',
+		);
+
+		$this->capture->save_material_meta_box( $material_id );
+
+		$this->assertSame( 'brevo', get_post_meta( $material_id, CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER, true ) );
+		$_POST = array();
+		wp_set_current_user( 0 );
+	}
+
+	public function test_admin_notice_reports_legacy_provider_overrides_without_deleting_them(): void {
+		$material_id = $this->create_material(
+			array( CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'rd_station' )
+		);
+		$administrator_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $administrator_id );
+
+		ob_start();
+		$this->capture->render_legacy_provider_override_notice();
+		$output = (string) ob_get_clean();
+
+		$this->assertSame( 1, $this->capture->legacy_provider_override_count() );
+		$this->assertStringContainsString( 'configuração legada de provider', $output );
+		$this->assertStringContainsString( 'preservada', $output );
+		$this->assertStringContainsString( 'Revisar provider global', $output );
+		$this->assertSame( 'rd_station', get_post_meta( $material_id, CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER, true ) );
+		wp_set_current_user( 0 );
+	}
+
+	public function test_returns_controlled_errors_for_unavailable_global_provider_configuration(): void {
+		$material_id = $this->create_material();
+		$capture = new CRM_Leads_Capture_Free_Material_Capture(
+			crm_leads_capture()->settings(),
+			crm_leads_capture()->providers()
+		);
+
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'brevo',
+				'providers'       => array( 'brevo' => array( 'enabled' => false ) ),
+			)
+		);
+		$result = $capture->process_submission( $this->valid_request( $material_id ) );
+		$this->assertSame( 'provider_disabled', $result->data()['code'] );
+
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'rd_station',
+				'providers'       => array( 'rd_station' => array( 'enabled' => true, 'api_key' => '' ) ),
+			)
+		);
+		$result = $capture->process_submission( $this->valid_request( $material_id ) );
+		$this->assertSame( 'provider_not_configured', $result->data()['code'] );
 	}
 
 	public function test_returns_controlled_error_when_brevo_fails(): void {
@@ -402,11 +483,11 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 	 * this person took on the site.
 	 */
 	public function test_analytics_device_id_is_forwarded_to_the_crm(): void {
-		$material_id = $this->create_material(
-			array(
-				CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'rd_station',
-			)
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array( 'active_provider' => 'rd_station' )
 		);
+		$material_id = $this->create_material();
 
 		$this->capture->process_submission(
 			$this->valid_request( $material_id, array( 'analytics_device_id' => 'abc-123_XY.Z:0' ) )
@@ -420,11 +501,11 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 	 * with a restricted charset and a capped length, never interpreted.
 	 */
 	public function test_analytics_device_id_is_sanitised(): void {
-		$material_id = $this->create_material(
-			array(
-				CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'rd_station',
-			)
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array( 'active_provider' => 'rd_station' )
 		);
+		$material_id = $this->create_material();
 
 		$this->capture->process_submission(
 			$this->valid_request( $material_id, array( 'analytics_device_id' => '<script>a</script>b' ) )
@@ -443,11 +524,11 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 	 * A visitor whose browser has no analytics must still become a lead.
 	 */
 	public function test_a_submission_without_the_identifier_still_succeeds(): void {
-		$material_id = $this->create_material(
-			array(
-				CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'rd_station',
-			)
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array( 'active_provider' => 'rd_station' )
 		);
+		$material_id = $this->create_material();
 
 		$result = $this->capture->process_submission( $this->valid_request( $material_id ) );
 

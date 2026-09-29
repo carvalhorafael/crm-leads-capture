@@ -67,9 +67,10 @@ Fallback temporário para compatibilidade com o tema:
 1. Valida nonce.
 2. Rejeita honeypot preenchido.
 3. Valida `material_id`.
-4. Lê list ID e URL de entrega.
+4. Resolve o provider global e lê o destino e a URL de entrega.
 5. Normaliza nome, email, WhatsApp e UTMs.
-6. Envia o contato ao Brevo com `updateEnabled: true`.
+6. Envia o contato ao provider global. Na Brevo, contatos existentes continuam
+   usando `updateEnabled: true`.
 7. Redireciona para a URL de entrega em sucesso.
 8. Redireciona de volta ao material com query args controlados em falha.
 

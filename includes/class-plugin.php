@@ -42,7 +42,8 @@ class CRM_Leads_Capture_Plugin {
 			$this->providers,
 			fn(): string => $this->settings->active_provider(),
 			static fn( string $nonce, string $action ): bool => false !== wp_verify_nonce( $nonce, $action ),
-			$this->logger
+			$this->logger,
+			fn( string $provider ): string => $this->settings->provider_configuration_error( $provider )
 		);
 
 		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
@@ -128,7 +129,9 @@ class CRM_Leads_Capture_Plugin {
 				new CRM_Leads_Capture_Elementor_Form_Action(
 					$this->settings,
 					new CRM_Leads_Capture_Elementor_Form_Mapper(),
-					new CRM_Leads_Capture_Lead_Payload()
+					new CRM_Leads_Capture_Lead_Payload(),
+					$this->logger,
+					$this->providers
 				)
 			);
 		}

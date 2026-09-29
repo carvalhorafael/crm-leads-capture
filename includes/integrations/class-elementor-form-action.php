@@ -12,6 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 class CRM_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Forms\Classes\Action_Base {
 	private CRM_Leads_Capture_Settings $settings;
 
+	private CRM_Leads_Capture_Provider_Registry $providers;
+
 	private CRM_Leads_Capture_Elementor_Form_Mapper $mapper;
 
 	private CRM_Leads_Capture_Lead_Payload $payload_builder;
@@ -22,12 +24,18 @@ class CRM_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Form
 		CRM_Leads_Capture_Settings $settings,
 		CRM_Leads_Capture_Elementor_Form_Mapper $mapper,
 		CRM_Leads_Capture_Lead_Payload $payload_builder,
-		?CRM_Leads_Capture_Logger $logger = null
+		?CRM_Leads_Capture_Logger $logger = null,
+		?CRM_Leads_Capture_Provider_Registry $providers = null
 	) {
 		$this->settings        = $settings;
 		$this->mapper          = $mapper;
 		$this->payload_builder = $payload_builder;
 		$this->logger          = $logger ?: new CRM_Leads_Capture_Logger();
+		$this->providers       = $providers ?: new CRM_Leads_Capture_Provider_Registry();
+		if ( null === $providers ) {
+			$this->providers->register( new CRM_Leads_Capture_Brevo_Provider( $this->settings ) );
+			$this->providers->register( new CRM_Leads_Capture_RD_Station_Provider( $this->settings ) );
+		}
 	}
 
 	public function get_name(): string {
@@ -76,10 +84,20 @@ class CRM_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Form
 		$settings = $record->get( 'form_settings' );
 		$settings = is_array( $settings ) ? $settings : array();
 
-		$api_key = $this->api_key_for_settings( $settings );
-		$list_id = $this->list_id_for_settings( $settings );
+		$provider_id = $this->settings->active_provider();
+		if ( '' !== $this->settings->provider_configuration_error( $provider_id ) ) {
+			$ajax_handler->add_error_message( esc_html__( 'Configuração do CRM incompleta.', 'crm-leads-capture' ) );
+			return;
+		}
 
-		if ( '' === $api_key || 0 >= $list_id ) {
+		$provider = $this->providers->get( $provider_id );
+		if ( null === $provider ) {
+			$ajax_handler->add_error_message( esc_html__( 'Provider de CRM indisponível.', 'crm-leads-capture' ) );
+			return;
+		}
+
+		$list_id = $this->list_id_for_settings( $settings );
+		if ( 'brevo' === $provider_id && 0 >= $list_id ) {
 			$ajax_handler->add_error_message( esc_html__( 'Configuração Brevo incompleta.', 'crm-leads-capture' ) );
 			return;
 		}
@@ -100,28 +118,29 @@ class CRM_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Form
 			return;
 		}
 
-		$payload = $payload_result->data()['payload'] ?? null;
-		if ( ! is_array( $payload ) ) {
-			$ajax_handler->add_error_message( esc_html__( 'Payload Brevo inválido.', 'crm-leads-capture' ) );
-			return;
+		$context = $mapped['context'];
+		if ( 'rd_station' === $provider_id ) {
+			$context['conversion_identifier'] = $this->settings->rd_station_default_conversion_identifier();
+			$context['tags']                  = $this->settings->rd_station_default_tags();
 		}
 
-		$result = ( new CRM_Leads_Capture_Brevo_Client( $api_key ) )->create_or_update_contact( $payload );
+		$result = $provider->send_lead( $mapped['input'], $context );
 		if ( $result->is_successful() ) {
-			$ajax_handler->add_success_message( esc_html__( 'Contato adicionado ao Brevo.', 'crm-leads-capture' ) );
+			$ajax_handler->add_success_message( esc_html__( 'Contato enviado ao CRM.', 'crm-leads-capture' ) );
 			return;
 		}
 
 		$this->logger->debug(
-			'Elementor Brevo request failed.',
+			'Elementor CRM provider request failed.',
 			array(
-				'status_code' => $result->status_code(),
-				'payload'     => $this->payload_summary( $payload ),
-				'brevo_error' => $this->brevo_error_summary( $result ),
+				'provider'       => $provider_id,
+				'status_code'    => $result->status_code(),
+				'payload'        => $this->payload_summary( $mapped['input'] ),
+				'provider_error' => $this->provider_error_summary( $result ),
 			)
 		);
 
-		$ajax_handler->add_error_message( esc_html__( 'Erro ao adicionar contato ao Brevo. Tente novamente.', 'crm-leads-capture' ) );
+		$ajax_handler->add_error_message( esc_html__( 'Erro ao enviar contato ao CRM. Tente novamente.', 'crm-leads-capture' ) );
 	}
 
 	/**
@@ -135,20 +154,6 @@ class CRM_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Form
 		}
 
 		return $element;
-	}
-
-	/**
-	 * @param array<string, mixed> $settings
-	 */
-	private function api_key_for_settings( array $settings ): string {
-		$global_api_key = $this->settings->api_key();
-		if ( '' !== $global_api_key ) {
-			return $global_api_key;
-		}
-
-		return isset( $settings['brevo_api_key'] ) && is_string( $settings['brevo_api_key'] )
-			? trim( $settings['brevo_api_key'] )
-			: '';
 	}
 
 	/**
@@ -183,7 +188,7 @@ class CRM_Leads_Capture_Elementor_Form_Action extends \ElementorPro\Modules\Form
 	/**
 	 * @return array<string, mixed>
 	 */
-	private function brevo_error_summary( CRM_Leads_Capture_Result $result ): array {
+	private function provider_error_summary( CRM_Leads_Capture_Result $result ): array {
 		$data = $result->data();
 
 		if ( isset( $data['error_summary'] ) && is_array( $data['error_summary'] ) ) {

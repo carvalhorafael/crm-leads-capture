@@ -22,18 +22,23 @@ class CRM_Leads_Capture_Processor {
 	/** @var callable */
 	private $nonce_verifier;
 
+	/** @var callable|null */
+	private $provider_configuration_validator;
+
 	public function __construct(
 		CRM_Leads_Capture_Profile_Registry $profiles,
 		CRM_Leads_Capture_Provider_Registry $providers,
 		callable $active_provider_resolver,
 		callable $nonce_verifier,
-		?CRM_Leads_Capture_Logger $logger = null
+		?CRM_Leads_Capture_Logger $logger = null,
+		?callable $provider_configuration_validator = null
 	) {
-		$this->profiles                 = $profiles;
-		$this->providers                = $providers;
-		$this->active_provider_resolver = $active_provider_resolver;
-		$this->nonce_verifier           = $nonce_verifier;
-		$this->logger                   = $logger ?: new CRM_Leads_Capture_Logger();
+		$this->profiles                           = $profiles;
+		$this->providers                          = $providers;
+		$this->active_provider_resolver           = $active_provider_resolver;
+		$this->nonce_verifier                     = $nonce_verifier;
+		$this->logger                             = $logger ?: new CRM_Leads_Capture_Logger();
+		$this->provider_configuration_validator = $provider_configuration_validator;
 	}
 
 	/**
@@ -108,6 +113,12 @@ class CRM_Leads_Capture_Processor {
 		);
 
 		$provider_id = $this->normalize_key( (string) call_user_func( $this->active_provider_resolver ) );
+		if ( null !== $this->provider_configuration_validator ) {
+			$configuration_error = (string) call_user_func( $this->provider_configuration_validator, $provider_id );
+			if ( '' !== $configuration_error ) {
+				return $this->failure( 503, $configuration_error );
+			}
+		}
 		$provider    = $this->providers->get( $provider_id );
 		if ( null === $provider ) {
 			return $this->failure( 503, 'provider_unavailable' );
@@ -151,11 +162,13 @@ class CRM_Leads_Capture_Processor {
 
 	private function failure( int $status_code, string $code ): CRM_Leads_Capture_Result {
 		$messages = array(
-			'profile_not_found'    => 'Capture profile not found.',
-			'invalid_nonce'        => 'Submission could not be validated.',
-			'spam'                 => 'Submission could not be processed.',
-			'provider_unavailable' => 'Capture provider is unavailable.',
-			'provider_error'       => 'Capture provider request failed.',
+			'profile_not_found'       => 'Capture profile not found.',
+			'invalid_nonce'           => 'Submission could not be validated.',
+			'spam'                    => 'Submission could not be processed.',
+			'provider_unavailable'    => 'Capture provider is unavailable.',
+			'provider_disabled'       => 'Capture provider is disabled.',
+			'provider_not_configured' => 'Capture provider is not configured.',
+			'provider_error'          => 'Capture provider request failed.',
 		);
 
 		return CRM_Leads_Capture_Result::failure(

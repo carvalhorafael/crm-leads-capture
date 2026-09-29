@@ -39,6 +39,37 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertTrue( $this->settings->has_api_key() );
 	}
 
+	public function test_active_provider_defaults_to_brevo_when_not_explicitly_configured(): void {
+		$this->assertSame( 'brevo', $this->settings->active_provider() );
+	}
+
+	public function test_validates_active_provider_availability_and_credentials(): void {
+		$this->assertSame( 'provider_not_configured', $this->settings->provider_configuration_error() );
+
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'brevo',
+				'providers'       => array(
+					'brevo' => array( 'enabled' => false, 'api_key' => 'brevo-key' ),
+				),
+			)
+		);
+		$this->assertSame( 'provider_disabled', $this->settings->provider_configuration_error() );
+
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'rd_station',
+				'providers'       => array(
+					'rd_station' => array( 'enabled' => true, 'api_key' => 'rd-key' ),
+				),
+			)
+		);
+		$this->assertSame( '', $this->settings->provider_configuration_error() );
+		$this->assertTrue( $this->settings->provider_configured( 'rd_station' ) );
+	}
+
 	public function test_default_list_id_falls_back_to_legacy_option(): void {
 		update_option( CRM_Leads_Capture_Settings::OPTION_DEFAULT_LIST_ID, '456' );
 
@@ -233,6 +264,17 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Status da configuração', $output );
 		$this->assertStringContainsString( 'Configurada', $output );
 		$this->assertStringNotContainsString( 'secret-api-key', $output );
+	}
+
+	public function test_global_provider_copy_does_not_offer_content_overrides(): void {
+		ob_start();
+		$this->settings->render_provider_section();
+		$this->settings->render_active_provider_field();
+		$output = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'único provider', $output );
+		$this->assertStringContainsString( 'usam sempre esta configuração global', $output );
+		$this->assertStringNotContainsString( 'sobrescrever', $output );
 	}
 
 	public function test_render_tabs_marks_current_tab_active(): void {

@@ -26,6 +26,8 @@ class CRM_Leads_Capture_Settings {
 		'missing_delivery',
 		'invalid_lead',
 		'invalid_payload',
+		'provider_disabled',
+		'provider_not_configured',
 		'provider_error',
 		'brevo_invalid_parameter',
 		'brevo_missing_parameter',
@@ -213,6 +215,31 @@ class CRM_Leads_Capture_Settings {
 		return $this->provider_option_bool( $provider, 'enabled', $default );
 	}
 
+	public function provider_configured( string $provider ): bool {
+		if ( 'brevo' === $provider ) {
+			return '' !== $this->brevo_api_key();
+		}
+
+		if ( 'rd_station' === $provider ) {
+			return '' !== $this->rd_station_api_key();
+		}
+
+		return false;
+	}
+
+	public function provider_configuration_error( string $provider = '' ): string {
+		$provider = '' !== $provider ? $provider : $this->active_provider();
+		if ( ! in_array( $provider, array( 'brevo', 'rd_station' ), true ) ) {
+			return 'provider_not_configured';
+		}
+
+		if ( ! $this->provider_enabled( $provider ) ) {
+			return 'provider_disabled';
+		}
+
+		return $this->provider_configured( $provider ) ? '' : 'provider_not_configured';
+	}
+
 	public function error_message( string $code ): string {
 		$messages = $this->error_messages();
 
@@ -276,6 +303,7 @@ class CRM_Leads_Capture_Settings {
 			<p><strong><?php echo esc_html__( 'Status da configuração', 'crm-leads-capture' ); ?></strong></p>
 			<ul>
 				<li><?php echo esc_html__( 'Provider ativo:', 'crm-leads-capture' ) . ' ' . esc_html( $this->active_provider_label() ); ?></li>
+				<li><?php echo esc_html__( 'Provider ativo pronto para envios:', 'crm-leads-capture' ) . ' ' . esc_html( '' === $this->provider_configuration_error() ? __( 'Sim', 'crm-leads-capture' ) : __( 'Não', 'crm-leads-capture' ) ); ?></li>
 				<li><?php echo esc_html__( 'Brevo API key:', 'crm-leads-capture' ) . ' ' . esc_html( '' !== $this->brevo_api_key() ? __( 'Configurada', 'crm-leads-capture' ) : __( 'Não configurada', 'crm-leads-capture' ) ); ?></li>
 				<li><?php echo esc_html__( 'RD Station API key:', 'crm-leads-capture' ) . ' ' . esc_html( '' !== $this->rd_station_api_key() ? __( 'Configurada', 'crm-leads-capture' ) : __( 'Não configurada', 'crm-leads-capture' ) ); ?></li>
 				<li><?php echo esc_html__( 'Logs técnicos:', 'crm-leads-capture' ) . ' ' . esc_html( ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ? __( 'Ativos via WP_DEBUG', 'crm-leads-capture' ) : __( 'Inativos', 'crm-leads-capture' ) ); ?></li>
@@ -285,7 +313,7 @@ class CRM_Leads_Capture_Settings {
 	}
 
 	public function render_provider_section(): void {
-		echo '<p>' . esc_html__( 'Escolha o provider padrão usado quando um material gratuito não define um provider próprio.', 'crm-leads-capture' ) . '</p>';
+		echo '<p>' . esc_html__( 'Escolha o único provider usado por todas as capturas desta instalação.', 'crm-leads-capture' ) . '</p>';
 	}
 
 	public function render_active_provider_field(): void {
@@ -294,7 +322,7 @@ class CRM_Leads_Capture_Settings {
 			<option value="brevo" <?php selected( 'brevo', $this->active_provider() ); ?>><?php echo esc_html( $this->provider_select_label( 'brevo', __( 'Brevo', 'crm-leads-capture' ) ) ); ?></option>
 			<option value="rd_station" <?php selected( 'rd_station', $this->active_provider() ); ?>><?php echo esc_html( $this->provider_select_label( 'rd_station', __( 'RD Station', 'crm-leads-capture' ) ) ); ?></option>
 		</select>
-		<p class="description"><?php echo esc_html__( 'Cada material pode sobrescrever este padrão escolhendo um provider próprio.', 'crm-leads-capture' ); ?></p>
+		<p class="description"><?php echo esc_html__( 'Materiais, páginas e perfis usam sempre esta configuração global.', 'crm-leads-capture' ); ?></p>
 		<?php
 	}
 
@@ -312,7 +340,7 @@ class CRM_Leads_Capture_Settings {
 	}
 
 	public function render_brevo_section(): void {
-		echo '<p>' . esc_html__( 'Configure a integração com Brevo. Um material pode usar este provider mesmo quando outro CRM é o padrão global.', 'crm-leads-capture' ) . '</p>';
+		echo '<p>' . esc_html__( 'Configure a integração com Brevo. Os envios usam estas credenciais quando Brevo é o provider global.', 'crm-leads-capture' ) . '</p>';
 	}
 
 	public function render_brevo_enabled_field(): void {
@@ -632,11 +660,13 @@ class CRM_Leads_Capture_Settings {
 		return array_merge(
 			$messages,
 			array(
-				'invalid_nonce'    => __( 'A sessão do formulário expirou. Recarregue a página e tente novamente.', 'crm-leads-capture' ),
-				'invalid_material' => $config_error,
-				'missing_list'     => $config_error,
-				'missing_delivery' => $config_error,
-				'invalid_lead'     => __( 'Revise os dados informados e tente novamente.', 'crm-leads-capture' ),
+				'invalid_nonce'           => __( 'A sessão do formulário expirou. Recarregue a página e tente novamente.', 'crm-leads-capture' ),
+				'invalid_material'        => $config_error,
+				'missing_list'            => $config_error,
+				'missing_delivery'        => $config_error,
+				'provider_disabled'       => $config_error,
+				'provider_not_configured' => $config_error,
+				'invalid_lead'            => __( 'Revise os dados informados e tente novamente.', 'crm-leads-capture' ),
 			)
 		);
 	}
@@ -650,6 +680,8 @@ class CRM_Leads_Capture_Settings {
 			'missing_delivery'            => __( 'URL de entrega ausente', 'crm-leads-capture' ),
 			'invalid_lead'                => __( 'Dados do lead inválidos', 'crm-leads-capture' ),
 			'invalid_payload'             => __( 'Payload inválido', 'crm-leads-capture' ),
+			'provider_disabled'           => __( 'Provider global inativo', 'crm-leads-capture' ),
+			'provider_not_configured'     => __( 'Provider global não configurado', 'crm-leads-capture' ),
 			'provider_error'              => __( 'Erro genérico do provider', 'crm-leads-capture' ),
 			'brevo_invalid_parameter'     => __( 'Parâmetro inválido na Brevo', 'crm-leads-capture' ),
 			'brevo_missing_parameter'     => __( 'Parâmetro ausente na Brevo', 'crm-leads-capture' ),

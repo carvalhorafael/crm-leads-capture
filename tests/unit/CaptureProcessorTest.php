@@ -281,4 +281,31 @@ class CaptureProcessorTest extends TestCase {
 		$this->assertSame( 503, $result->status_code() );
 		$this->assertSame( 'provider_unavailable', $result->data()['code'] );
 	}
+
+	public function test_validates_global_provider_configuration_before_sending(): void {
+		$processor = new CRM_Leads_Capture_Processor(
+			$this->profiles,
+			$this->providers,
+			static fn(): string => 'brevo',
+			static fn( string $nonce, string $action ): bool => true,
+			null,
+			static fn( string $provider ): string => 'brevo' === $provider ? 'provider_disabled' : ''
+		);
+
+		$result = $processor->process(
+			'coo',
+			array(
+				'_wpnonce' => 'valid',
+				'name'      => 'Rafael',
+				'email'     => 'rafael@example.com',
+				'consent'   => 'yes',
+				'company'   => 'Acme',
+			)
+		);
+
+		$this->assertFalse( $result->is_successful() );
+		$this->assertSame( 503, $result->status_code() );
+		$this->assertSame( 'provider_disabled', $result->data()['code'] );
+		$this->assertNull( $this->provider->last_payload );
+	}
 }

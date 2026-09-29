@@ -69,6 +69,7 @@ class CRM_Leads_Capture_Free_Material_Capture {
 		add_action( 'add_meta_boxes', array( $this, 'register_material_meta_box' ) );
 		add_action( 'save_post_material_gratuito', array( $this, 'save_material_meta_box' ) );
 		add_action( 'admin_notices', array( $this, 'render_free_materials_notice' ) );
+		add_action( 'admin_notices', array( $this, 'render_legacy_provider_override_notice' ) );
 		add_shortcode( self::SHORTCODE_ERROR_MESSAGE, array( $this, 'render_error_message_shortcode' ) );
 	}
 
@@ -78,6 +79,52 @@ class CRM_Leads_Capture_Free_Material_Capture {
 		}
 
 		echo '<div class="notice notice-warning"><p>' . esc_html__( 'CRM Leads Capture está ativo, mas o CPT material_gratuito não foi encontrado. Ative o plugin free-materials para configurar capturas por material.', 'crm-leads-capture' ) . '</p></div>';
+	}
+
+	public function render_legacy_provider_override_notice(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$count = $this->legacy_provider_override_count();
+		if ( 0 === $count ) {
+			return;
+		}
+
+		$url = add_query_arg(
+			array( 'page' => CRM_Leads_Capture_Settings::SETTINGS_PAGE ),
+			admin_url( 'options-general.php' )
+		);
+		?>
+		<div class="notice notice-warning">
+			<p>
+				<?php
+				printf(
+					/* translators: 1: number of contents with legacy provider metadata, 2: active provider label. */
+					esc_html( _n( '%1$d conteúdo possui uma configuração legada de provider. Ela foi preservada, mas é ignorada; todos os envios usam %2$s.', '%1$d conteúdos possuem configurações legadas de provider. Elas foram preservadas, mas são ignoradas; todos os envios usam %2$s.', $count, 'crm-leads-capture' ) ),
+					(int) $count,
+					esc_html( $this->provider_label( $this->settings->active_provider() ) )
+				);
+				?>
+				<a href="<?php echo esc_url( $url ); ?>"><?php echo esc_html__( 'Revisar provider global', 'crm-leads-capture' ); ?></a>
+			</p>
+		</div>
+		<?php
+	}
+
+	public function legacy_provider_override_count(): int {
+		$query = new WP_Query(
+			array(
+				'post_type'      => array_values( get_post_types( array(), 'names' ) ),
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_key'       => self::META_PROVIDER,
+				'no_found_rows'  => false,
+			)
+		);
+
+		return (int) $query->found_posts;
 	}
 
 	public function register_material_meta_box(): void {
@@ -101,29 +148,26 @@ class CRM_Leads_Capture_Free_Material_Capture {
 	public function render_material_meta_box( $post ): void {
 		wp_nonce_field( 'crm_leads_capture_material_meta', 'crm_leads_capture_material_meta_nonce' );
 
-		$provider_override_id = $this->material_provider_override_id( (int) $post->ID );
-		$provider_id          = '' !== $provider_override_id ? $provider_override_id : $this->settings->active_provider();
-		$uses_global_provider = '' === $provider_override_id;
+		$provider_id          = $this->settings->active_provider();
+		$legacy_provider_id   = $this->material_provider_override_id( (int) $post->ID );
 		?>
 		<p>
-			<label for="crm_leads_capture_material_provider"><strong><?php echo esc_html__( 'Provider', 'crm-leads-capture' ); ?></strong></label>
-			<select id="crm_leads_capture_material_provider" name="crm_leads_capture_material_provider" class="widefat">
-				<option value="" <?php selected( '', $provider_override_id ); ?>><?php echo esc_html__( 'Usar configuração global', 'crm-leads-capture' ); ?></option>
-				<option value="brevo" <?php selected( 'brevo', $provider_override_id ); ?>><?php echo esc_html__( 'Brevo', 'crm-leads-capture' ); ?></option>
-				<option value="rd_station" <?php selected( 'rd_station', $provider_override_id ); ?>><?php echo esc_html__( 'RD Station', 'crm-leads-capture' ); ?></option>
-			</select>
-			<?php if ( $uses_global_provider ) : ?>
-				<span class="description">
+			<strong><?php echo esc_html__( 'Provider global', 'crm-leads-capture' ); ?></strong><br>
+			<span class="description"><?php echo esc_html( $this->provider_label( $provider_id ) ); ?></span>
+		</p>
+		<?php if ( '' !== $legacy_provider_id ) : ?>
+			<div class="notice notice-warning inline">
+				<p>
 					<?php
 					printf(
-						/* translators: %s: active provider label. */
-						esc_html__( 'Provider efetivo: %s.', 'crm-leads-capture' ),
-						esc_html( $this->provider_label( $provider_id ) )
+						/* translators: %s: legacy provider label. */
+						esc_html__( 'Configuração legada encontrada: %s. Ela foi preservada, mas não altera mais o provider global.', 'crm-leads-capture' ),
+						esc_html( $this->provider_label( $legacy_provider_id ) )
 					);
 					?>
-				</span>
-			<?php endif; ?>
-		</p>
+				</p>
+			</div>
+		<?php endif; ?>
 		<p>
 			<label for="crm_leads_capture_delivery_url"><strong><?php echo esc_html__( 'URL de entrega', 'crm-leads-capture' ); ?></strong></label>
 			<input type="url" id="crm_leads_capture_delivery_url" name="crm_leads_capture_delivery_url" value="<?php echo esc_attr( $this->material_delivery_url_override( (int) $post->ID ) ); ?>" class="widefat" />
@@ -131,18 +175,18 @@ class CRM_Leads_Capture_Free_Material_Capture {
 		</p>
 		<?php if ( 'rd_station' === $provider_id ) : ?>
 			<p>
-				<label for="crm_leads_capture_rd_station_conversion_identifier"><strong><?php echo esc_html( $uses_global_provider ? __( 'Identificador de conversão', 'crm-leads-capture' ) : __( 'Conversão RD Station', 'crm-leads-capture' ) ); ?></strong></label>
+				<label for="crm_leads_capture_rd_station_conversion_identifier"><strong><?php echo esc_html__( 'Identificador de conversão', 'crm-leads-capture' ); ?></strong></label>
 				<input type="text" id="crm_leads_capture_rd_station_conversion_identifier" name="crm_leads_capture_rd_station_conversion_identifier" value="<?php echo esc_attr( (string) get_post_meta( (int) $post->ID, self::META_RD_STATION_CONVERSION_IDENTIFIER, true ) ); ?>" class="widefat" />
 				<span class="description"><?php echo esc_html__( 'Nome do evento de conversão que aparecerá na RD Station para este lead.', 'crm-leads-capture' ); ?></span>
 			</p>
 			<p>
-				<label for="crm_leads_capture_rd_station_tags"><strong><?php echo esc_html( $uses_global_provider ? __( 'Tags', 'crm-leads-capture' ) : __( 'Tags RD Station', 'crm-leads-capture' ) ); ?></strong></label>
+				<label for="crm_leads_capture_rd_station_tags"><strong><?php echo esc_html__( 'Tags', 'crm-leads-capture' ); ?></strong></label>
 				<input type="text" id="crm_leads_capture_rd_station_tags" name="crm_leads_capture_rd_station_tags" value="<?php echo esc_attr( (string) get_post_meta( (int) $post->ID, self::META_RD_STATION_TAGS, true ) ); ?>" class="widefat" />
 				<span class="description"><?php echo esc_html__( 'Tags adicionadas ao lead para segmentação e automações. Separe múltiplas tags por vírgulas.', 'crm-leads-capture' ); ?></span>
 			</p>
 		<?php else : ?>
 			<p>
-				<label for="crm_leads_capture_list_id"><strong><?php echo esc_html( $uses_global_provider ? __( 'Lista', 'crm-leads-capture' ) : __( 'Lista Brevo', 'crm-leads-capture' ) ); ?></strong></label>
+				<label for="crm_leads_capture_list_id"><strong><?php echo esc_html__( 'Lista', 'crm-leads-capture' ); ?></strong></label>
 				<input type="number" min="0" step="1" id="crm_leads_capture_list_id" name="crm_leads_capture_list_id" value="<?php echo esc_attr( (string) $this->material_list_id( (int) $post->ID ) ); ?>" class="widefat" />
 			</p>
 		<?php endif; ?>
@@ -161,13 +205,7 @@ class CRM_Leads_Capture_Free_Material_Capture {
 			return;
 		}
 
-		$request  = $this->unslash_array( $_POST );
-		$provider = $this->clean_string( $request['crm_leads_capture_material_provider'] ?? '' );
-		if ( in_array( $provider, array( 'brevo', 'rd_station' ), true ) ) {
-			update_post_meta( $post_id, self::META_PROVIDER, $provider );
-		} else {
-			delete_post_meta( $post_id, self::META_PROVIDER );
-		}
+		$request = $this->unslash_array( $_POST );
 
 		$this->update_or_delete_meta( $post_id, self::META_DELIVERY_URL, $this->clean_url( $request['crm_leads_capture_delivery_url'] ?? '' ) );
 		$list_id = $this->absint( $request['crm_leads_capture_list_id'] ?? 0 );
@@ -326,7 +364,13 @@ class CRM_Leads_Capture_Free_Material_Capture {
 			return $this->failure( 'invalid_lead', $material_id );
 		}
 
-		$provider_id = $this->material_provider_id( $material_id );
+		$provider_id = $this->settings->active_provider();
+		if ( null === $this->provider_factory ) {
+			$provider_configuration_error = $this->settings->provider_configuration_error( $provider_id );
+			if ( '' !== $provider_configuration_error ) {
+				return $this->failure( $provider_configuration_error, $material_id );
+			}
+		}
 		$provider    = $this->provider( $provider_id );
 		$context     = $this->provider_context( $material_id, $provider_id, $request );
 
@@ -466,12 +510,6 @@ class CRM_Leads_Capture_Free_Material_Capture {
 		}
 
 		return $this->clean_url( get_post_meta( $material_id, self::META_LEGACY_DELIVERY_URL, true ) );
-	}
-
-	private function material_provider_id( int $material_id ): string {
-		$provider = $this->material_provider_override_id( $material_id );
-
-		return in_array( $provider, array( 'brevo', 'rd_station' ), true ) ? $provider : $this->settings->active_provider();
 	}
 
 	private function material_provider_override_id( int $material_id ): string {
@@ -673,7 +711,7 @@ class CRM_Leads_Capture_Free_Material_Capture {
 			return 403;
 		}
 
-		if ( in_array( $code, array( 'missing_list', 'missing_delivery' ), true ) ) {
+		if ( in_array( $code, array( 'missing_list', 'missing_delivery', 'provider_disabled', 'provider_not_configured' ), true ) ) {
 			return 500;
 		}
 

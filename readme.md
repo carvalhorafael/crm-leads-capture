@@ -22,7 +22,9 @@ Providers iniciais:
   `https://api.rd.services/platform/conversions`, com `event_type=CONVERSION`,
   `event_family=CDP` e payload de conversão.
 
-O provider ativo é escolhido em `Configurações > CRM Leads Capture`.
+O provider ativo é escolhido em `Configurações > CRM Leads Capture` e determina
+todos os envios da instalação. Materiais, páginas e formulários não podem trocar
+o provider global.
 
 ## Configuração
 
@@ -75,7 +77,7 @@ Campos de credencial nunca exibem o valor salvo no admin.
 
 Meta keys novas:
 
-- `_crm_leads_capture_provider`
+- `_crm_leads_capture_provider` (legado, preservado para diagnóstico e ignorado no roteamento)
 - `_crm_leads_capture_delivery_url`
 - `_crm_leads_capture_list_id`
 - `_crm_leads_capture_rd_station_conversion_identifier`

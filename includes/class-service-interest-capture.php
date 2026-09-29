@@ -183,6 +183,12 @@ class CRM_Leads_Capture_Service_Interest_Capture {
 		}
 
 		$provider_id = $this->settings->active_provider();
+		if ( null === $this->provider_factory ) {
+			$provider_configuration_error = $this->settings->provider_configuration_error( $provider_id );
+			if ( '' !== $provider_configuration_error ) {
+				return $this->failure( $provider_configuration_error );
+			}
+		}
 		$provider    = $this->provider( $provider_id );
 		$lead_id     = $this->store_interest( $lead, $provider_id );
 		$context     = $this->provider_context( $provider_id, $request );

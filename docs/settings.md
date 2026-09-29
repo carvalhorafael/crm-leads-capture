@@ -13,16 +13,16 @@ Configurações > CRM Leads Capture
 
 A tela é organizada em abas:
 
-- **General**: define o provider padrão usado por materiais sem override.
+- **General**: define o único provider usado por todas as capturas da instalação.
   Também define uma URL de entrega padrão.
 - **Messages**: personaliza mensagens públicas de sucesso e erro.
 - **RD Station**: ativa o provider RD Station e configura suas credenciais e
   padrões de conversão.
 - **Brevo**: ativa o provider Brevo e configura suas credenciais e lista padrão.
 
-Mais de um provider pode estar ativo/configurado ao mesmo tempo. Cada material
-pode escolher um provider específico; quando não escolhe, usa o provider padrão
-da aba **General**.
+Mais de um provider pode permanecer configurado ao mesmo tempo, mas somente o
+provider global escolhido na aba **General** recebe envios. Materiais, páginas e
+perfis não podem sobrescrever essa escolha.
 
 ## Estrutura da option
 
@@ -108,18 +108,20 @@ chave existente.
 
 ## Relação com materiais gratuitos
 
-Para cada material gratuito, o plugin tenta usar primeiro os metadados genéricos:
+Para cada material gratuito, o plugin usa o provider global e lê os metadados de
+destino relevantes para ele:
 
 ```text
-_crm_leads_capture_provider
 _crm_leads_capture_list_id
 _crm_leads_capture_delivery_url
 _crm_leads_capture_rd_station_conversion_identifier
 _crm_leads_capture_rd_station_tags
 ```
 
-Se o provider do material estiver vazio, o plugin usa o provider padrão global.
-Para Brevo, se a lista por material estiver vazia, usa a lista padrão global.
+O metadado legado `_crm_leads_capture_provider` é preservado para diagnóstico,
+mas não interfere mais no roteamento. Quando ele existe, o administrador recebe
+um aviso. Para Brevo, se a lista por material estiver vazia, usa a lista padrão
+global.
 
 Para URL de entrega, a ordem é:
 
