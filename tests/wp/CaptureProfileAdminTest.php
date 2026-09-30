@@ -28,6 +28,7 @@ class CaptureProfileAdminTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		$_POST = array();
+		$_GET  = array();
 		wp_set_current_user( 0 );
 		parent::tear_down();
 	}
@@ -153,14 +154,17 @@ class CaptureProfileAdminTest extends WP_UnitTestCase {
 		$this->assertSame( 'saved-rd', $stored['rd_station']['conversion_identifier'] );
 	}
 
-	public function test_admin_page_shows_only_active_provider_destination(): void {
+	public function test_profiles_tab_shows_only_active_provider_destination(): void {
 		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 		$this->admin->register_setting();
-		$_GET = array( 'page' => CRM_Leads_Capture_Profile_Admin::PAGE_SLUG );
+		$_GET = array(
+			'page' => CRM_Leads_Capture_Settings::SETTINGS_PAGE,
+			'tab'  => CRM_Leads_Capture_Profile_Admin::TAB_SLUG,
+		);
 
 		ob_start();
-		$this->admin->render_page();
+		$this->admin->render_tab();
 		$output = (string) ob_get_clean();
 
 		$this->assertStringContainsString( 'Destino: Brevo', $output );
@@ -169,14 +173,18 @@ class CaptureProfileAdminTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'seletor de provider', strtolower( $output ) );
 		$this->assertStringContainsString( 'data-crm-profile-add-field', $output );
 		$this->assertStringContainsString( 'data-crm-profile-remove-field', $output );
+		$this->assertStringContainsString( 'page=crm-leads-capture&tab=profiles', html_entity_decode( $output ) );
+		$this->assertStringNotContainsString( 'page=crm-leads-capture-profiles', $output );
 	}
 
-	public function test_admin_script_loads_only_on_profile_page(): void {
-		$this->admin->enqueue_assets( 'settings_page_' . CRM_Leads_Capture_Profile_Admin::PAGE_SLUG );
+	public function test_admin_script_loads_only_on_profiles_tab(): void {
+		$_GET = array( 'tab' => CRM_Leads_Capture_Profile_Admin::TAB_SLUG );
+		$this->admin->enqueue_assets( 'settings_page_' . CRM_Leads_Capture_Settings::SETTINGS_PAGE );
 		$this->assertTrue( wp_script_is( 'crm-leads-capture-profile-admin', 'enqueued' ) );
 
 		wp_dequeue_script( 'crm-leads-capture-profile-admin' );
-		$this->admin->enqueue_assets( 'settings_page_other' );
+		$_GET = array( 'tab' => 'general' );
+		$this->admin->enqueue_assets( 'settings_page_' . CRM_Leads_Capture_Settings::SETTINGS_PAGE );
 		$this->assertFalse( wp_script_is( 'crm-leads-capture-profile-admin', 'enqueued' ) );
 	}
 

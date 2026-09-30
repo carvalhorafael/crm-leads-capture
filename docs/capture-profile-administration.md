@@ -1,6 +1,7 @@
 # Administração de perfis e associação por página
 
-Administradores podem criar perfis em **Configurações > Perfis de captura**.
+Administradores podem criar perfis em **Configurações > CRM Leads Capture >
+Perfis de captura**.
 Cada perfil salva nome, slug, origem, schema de campos, obrigatoriedade,
 mensagem de sucesso, redirect e a configuração do provider global ativo.
 Perfis são adicionados e removidos nessa própria tela; nenhum perfil de negócio

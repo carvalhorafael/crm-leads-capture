@@ -1,9 +1,9 @@
 # Perfis comerciais administráveis
 
 COO as a Service e convite para palestras usam perfis comuns criados em
-**Configurações > Perfis de captura**. O plugin não cria esses perfis
-automaticamente, portanto instalações que não oferecem esses serviços não
-recebem campos, mensagens ou configurações específicas deles.
+**Configurações > CRM Leads Capture > Perfis de captura**. O plugin não cria
+esses perfis automaticamente, portanto instalações que não oferecem esses
+serviços não recebem campos, mensagens ou configurações específicas deles.
 
 ## Perfil COO as a Service
 

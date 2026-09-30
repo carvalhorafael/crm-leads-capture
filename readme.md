@@ -9,8 +9,8 @@ monta um payload normalizado e delega o envio ao provider de CRM ativo.
 
 Formulários reutilizáveis são definidos por perfis com schema, validação,
 mapeamento do CRM e comportamento de sucesso. Cada instalação cria somente os
-perfis que utiliza em **Configurações > Perfis de captura**. O plugin inclui
-apenas o adaptador compatível de materiais gratuitos.
+perfis que utiliza em **Configurações > CRM Leads Capture > Perfis de captura**.
+O plugin inclui apenas o adaptador compatível de materiais gratuitos.
 
 Veja [administração de perfis](docs/capture-profile-administration.md) e o
 exemplo de [perfis comerciais administráveis](docs/commercial-capture-profiles.md).

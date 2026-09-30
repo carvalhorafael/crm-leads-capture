@@ -18,6 +18,9 @@ class CRM_Leads_Capture_Settings {
 	public const LEGACY_OPTION_SETTINGS = 'brevo_leads_capture_settings';
 	public const LEGACY_OPTION_DEFAULT_LIST_ID = 'brevo_leads_capture_default_list_id';
 
+	/** @var array<string, array{label: string, renderer: callable}> */
+	private array $custom_tabs = array();
+
 	public const ERROR_MESSAGE_CODES = array(
 		'invalid_nonce',
 		'spam',
@@ -54,6 +57,18 @@ class CRM_Leads_Capture_Settings {
 			'manage_options',
 			self::SETTINGS_PAGE,
 			array( $this, 'render_page' )
+		);
+	}
+
+	public function register_tab( string $slug, string $label, callable $renderer ): void {
+		$slug = sanitize_key( $slug );
+		if ( '' === $slug ) {
+			return;
+		}
+
+		$this->custom_tabs[ $slug ] = array(
+			'label'    => $label,
+			'renderer' => $renderer,
 		);
 	}
 
@@ -293,11 +308,16 @@ class CRM_Leads_Capture_Settings {
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 			<?php $this->render_tabs(); ?>
-			<form action="options.php" method="post">
-				<?php settings_fields( self::SETTINGS_GROUP ); ?>
-				<?php do_settings_sections( $this->settings_tab_page( $this->current_tab() ) ); ?>
-				<?php submit_button( __( 'Salvar configurações', 'crm-leads-capture' ) ); ?>
-			</form>
+			<?php $current_tab = $this->current_tab(); ?>
+			<?php if ( isset( $this->custom_tabs[ $current_tab ] ) ) : ?>
+				<?php call_user_func( $this->custom_tabs[ $current_tab ]['renderer'] ); ?>
+			<?php else : ?>
+				<form action="options.php" method="post">
+					<?php settings_fields( self::SETTINGS_GROUP ); ?>
+					<?php do_settings_sections( $this->settings_tab_page( $current_tab ) ); ?>
+					<?php submit_button( __( 'Salvar configurações', 'crm-leads-capture' ) ); ?>
+				</form>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -587,11 +607,18 @@ class CRM_Leads_Capture_Settings {
 	 * @return array<string, string>
 	 */
 	private function tabs(): array {
-		return array(
-			'general'    => __( 'General', 'crm-leads-capture' ),
-			'messages'   => __( 'Messages', 'crm-leads-capture' ),
-			'rd_station' => __( 'RD Station', 'crm-leads-capture' ),
-			'brevo'      => __( 'Brevo', 'crm-leads-capture' ),
+		$tabs = array( 'general' => __( 'General', 'crm-leads-capture' ) );
+		foreach ( $this->custom_tabs as $slug => $tab ) {
+			$tabs[ $slug ] = $tab['label'];
+		}
+
+		return array_merge(
+			$tabs,
+			array(
+				'messages'   => __( 'Messages', 'crm-leads-capture' ),
+				'rd_station' => __( 'RD Station', 'crm-leads-capture' ),
+				'brevo'      => __( 'Brevo', 'crm-leads-capture' ),
+			)
 		);
 	}
 

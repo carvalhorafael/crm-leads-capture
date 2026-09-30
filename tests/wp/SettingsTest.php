@@ -18,6 +18,11 @@ class SettingsTest extends WP_UnitTestCase {
 		delete_option( CRM_Leads_Capture_Settings::LEGACY_OPTION_DEFAULT_LIST_ID );
 	}
 
+	public function tear_down(): void {
+		$_GET = array();
+		parent::tear_down();
+	}
+
 	public function test_plugin_registers_settings_admin_hooks(): void {
 		$this->assertSame( 10, has_action( 'admin_menu', array( crm_leads_capture()->settings(), 'register_page' ) ) );
 		$this->assertSame( 10, has_action( 'admin_init', array( crm_leads_capture()->settings(), 'register_settings' ) ) );
@@ -336,17 +341,36 @@ class SettingsTest extends WP_UnitTestCase {
 		$_GET['tab'] = 'messages';
 
 		ob_start();
-		$this->settings->render_tabs();
+		crm_leads_capture()->settings()->render_tabs();
 		$output = (string) ob_get_clean();
 
 		$this->assertStringContainsString( 'nav-tab-wrapper', $output );
 		$this->assertStringContainsString( 'General', $output );
+		$this->assertStringContainsString( 'Perfis de captura', $output );
 		$this->assertStringContainsString( 'Messages', $output );
 		$this->assertStringContainsString( 'RD Station', $output );
 		$this->assertStringContainsString( 'Brevo', $output );
 		$this->assertStringContainsString( 'tab=messages', $output );
 		$this->assertStringContainsString( 'nav-tab-active', $output );
 
-		unset( $_GET['tab'] );
+	}
+
+	public function test_profiles_render_inside_main_plugin_settings_page(): void {
+		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+		$_GET = array(
+			'page' => CRM_Leads_Capture_Settings::SETTINGS_PAGE,
+			'tab'  => CRM_Leads_Capture_Profile_Admin::TAB_SLUG,
+		);
+
+		ob_start();
+		crm_leads_capture()->settings()->render_page();
+		$output = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'nav-tab-active', $output );
+		$this->assertStringContainsString( 'Perfis de captura', $output );
+		$this->assertStringContainsString( 'class="crm-leads-capture-profiles-tab"', $output );
+		$this->assertSame( 1, substr_count( $output, 'class="wrap"' ) );
+		$this->assertStringNotContainsString( 'name="option_page" value="crm_leads_capture_settings"', $output );
 	}
 }

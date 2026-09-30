@@ -52,6 +52,7 @@ class CRM_Leads_Capture_Plugin {
 		);
 		$this->frontend = new CRM_Leads_Capture_Frontend( $this->capture_profiles, $this->capture_processor, $this->settings, $this->profile_repository );
 		$this->profile_admin = new CRM_Leads_Capture_Profile_Admin( $this->profile_repository, $this->settings );
+		$this->settings->register_tab( CRM_Leads_Capture_Profile_Admin::TAB_SLUG, __( 'Perfis de captura', 'crm-leads-capture' ), array( $this->profile_admin, 'render_tab' ) );
 
 		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
 		$this->github_updater        = new CRM_Leads_Capture_GitHub_Updater( CRM_LEADS_CAPTURE_FILE, CRM_LEADS_CAPTURE_VERSION );

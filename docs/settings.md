@@ -16,6 +16,8 @@ A tela é organizada em abas:
 - **General**: define o único provider usado por todas as capturas da instalação.
   Também define uma URL de entrega padrão e a compatibilidade temporária com
   materiais gratuitos.
+- **Perfis de captura**: cria, edita e exclui schemas reutilizáveis de captura,
+  com seus campos, mensagens e destinos no provider global.
 - **Messages**: personaliza a mensagem de sucesso dos materiais gratuitos
   legados e as mensagens públicas de erro. Cada perfil administrável possui sua
   própria mensagem de sucesso.

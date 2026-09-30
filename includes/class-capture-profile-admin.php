@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class CRM_Leads_Capture_Profile_Admin {
 	public const SETTINGS_GROUP = 'crm_leads_capture_profiles';
-	public const PAGE_SLUG = 'crm-leads-capture-profiles';
+	public const TAB_SLUG = 'profiles';
 	public const PAGE_NONCE_ACTION = 'crm_leads_capture_save_page_profile';
 	public const PAGE_NONCE_FIELD = 'crm_leads_capture_page_nonce';
 
@@ -25,7 +25,6 @@ class CRM_Leads_Capture_Profile_Admin {
 	}
 
 	public function register_hooks(): void {
-		add_action( 'admin_menu', array( $this, 'register_page' ) );
 		add_action( 'admin_init', array( $this, 'register_setting' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'add_meta_boxes_page', array( $this, 'register_page_meta_box' ) );
@@ -34,7 +33,9 @@ class CRM_Leads_Capture_Profile_Admin {
 
 	/** @param string $hook_suffix Current admin page hook. */
 	public function enqueue_assets( string $hook_suffix ): void {
-		if ( 'settings_page_' . self::PAGE_SLUG !== $hook_suffix ) {
+		$request = wp_unslash( $_GET );
+		$tab     = sanitize_key( $request['tab'] ?? '' );
+		if ( 'settings_page_' . CRM_Leads_Capture_Settings::SETTINGS_PAGE !== $hook_suffix || self::TAB_SLUG !== $tab ) {
 			return;
 		}
 
@@ -45,17 +46,6 @@ class CRM_Leads_Capture_Profile_Admin {
 			array(),
 			is_file( $path ) ? (string) filemtime( $path ) : CRM_LEADS_CAPTURE_VERSION,
 			true
-		);
-	}
-
-	public function register_page(): void {
-		add_submenu_page(
-			'options-general.php',
-			__( 'Perfis de captura', 'crm-leads-capture' ),
-			__( 'Perfis de captura', 'crm-leads-capture' ),
-			'manage_options',
-			self::PAGE_SLUG,
-			array( $this, 'render_page' )
 		);
 	}
 
@@ -82,7 +72,7 @@ class CRM_Leads_Capture_Profile_Admin {
 		);
 	}
 
-	public function render_page(): void {
+	public function render_tab(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
@@ -93,16 +83,16 @@ class CRM_Leads_Capture_Profile_Admin {
 		$config   = isset( $profiles[ $slug ] ) && is_array( $profiles[ $slug ] ) ? $profiles[ $slug ] : array();
 		$provider = $this->settings->active_provider();
 		?>
-		<div class="wrap">
-			<h1><?php echo esc_html__( 'Perfis de captura', 'crm-leads-capture' ); ?></h1>
+		<div class="crm-leads-capture-profiles-tab">
+			<h2><?php echo esc_html__( 'Perfis de captura', 'crm-leads-capture' ); ?></h2>
 			<p><?php echo esc_html__( 'Os perfis definem validação e destinos no servidor. O tema continua responsável pelo markup do formulário.', 'crm-leads-capture' ); ?></p>
 			<?php settings_errors( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES ); ?>
 			<ul>
 				<?php foreach ( $profiles as $profile_slug => $profile ) : ?>
-					<li><a href="<?php echo esc_url( add_query_arg( array( 'page' => self::PAGE_SLUG, 'profile' => $profile_slug ), admin_url( 'options-general.php' ) ) ); ?>"><?php echo esc_html( (string) ( $profile['name'] ?? $profile_slug ) ); ?></a></li>
+					<li><a href="<?php echo esc_url( $this->profiles_url( $profile_slug ) ); ?>"><?php echo esc_html( (string) ( $profile['name'] ?? $profile_slug ) ); ?></a></li>
 				<?php endforeach; ?>
 			</ul>
-			<p><a class="button" href="<?php echo esc_url( add_query_arg( 'page', self::PAGE_SLUG, admin_url( 'options-general.php' ) ) ); ?>"><?php echo esc_html__( 'Novo perfil', 'crm-leads-capture' ); ?></a></p>
+			<p><a class="button" href="<?php echo esc_url( $this->profiles_url() ); ?>"><?php echo esc_html__( 'Novo perfil', 'crm-leads-capture' ); ?></a></p>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( self::SETTINGS_GROUP ); ?>
@@ -125,6 +115,18 @@ class CRM_Leads_Capture_Profile_Admin {
 			</form>
 		</div>
 		<?php
+	}
+
+	private function profiles_url( string $profile_slug = '' ): string {
+		$args = array(
+			'page' => CRM_Leads_Capture_Settings::SETTINGS_PAGE,
+			'tab'  => self::TAB_SLUG,
+		);
+		if ( '' !== $profile_slug ) {
+			$args['profile'] = $profile_slug;
+		}
+
+		return add_query_arg( $args, admin_url( 'options-general.php' ) );
 	}
 
 	/** @param mixed $post */

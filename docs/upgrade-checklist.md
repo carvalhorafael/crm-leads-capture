@@ -32,8 +32,8 @@ fallbacks legados e não exige migração manual dos materiais existentes.
 5. Abra **Configurações > CRM Leads Capture** e confirme novamente provider,
    credencial e status.
 6. Antes de publicar formulários de COO ou palestras, crie os respectivos
-   perfis em **Configurações > Perfis de captura**. Eles não são instalados
-   automaticamente em sites que não os utilizam.
+   perfis na aba **Configurações > CRM Leads Capture > Perfis de captura**. Eles
+   não são instalados automaticamente em sites que não os utilizam.
 
 O pacote precisa conter uma única pasta raiz `crm-leads-capture/`. Ele não deve
 conter `tests/`, `vendor/`, `.github/`, `.env`, logs ou dumps.
@@ -61,7 +61,8 @@ Em todos os envios:
 
 ## Perfis e campos customizados
 
-Para criar um formulário novo, use **Configurações > Perfis de captura**:
+Para criar um formulário novo, use a aba **Configurações > CRM Leads Capture >
+Perfis de captura**:
 
 1. Defina nome, slug e origem.
 2. Cadastre cada campo com tipo, grupo e obrigatoriedade.

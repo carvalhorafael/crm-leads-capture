@@ -20,6 +20,8 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
   palestras passam a ser perfis comuns, persistidos e editáveis por instalação.
 - Permite adicionar e remover campos no editor de perfis e configurar valores
   válidos para campos `select`.
+- Integra a administração de perfis como aba da página principal do plugin, sem
+  criar um segundo submenu em Configurações.
 
 ## 0.6.1 - captura em site privado
 
