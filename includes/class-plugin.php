@@ -84,14 +84,22 @@ class CRM_Leads_Capture_Plugin {
 
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( $this, 'register_capture_profiles' ), 11 );
+		add_action( 'init', array( $this, 'register_optional_capture_modules' ), 12 );
 		$this->settings->register_hooks();
 		$this->profile_repository->register_hooks();
 		$this->profile_admin->register_hooks();
 		$this->frontend->register_hooks();
-		$this->free_material_capture->register_hooks();
-		$this->service_interest_capture->register_hooks();
 		$this->github_updater->register_hooks();
 		add_action( 'elementor_pro/forms/actions/register', array( $this, 'register_elementor_form_action' ) );
+	}
+
+	public function register_optional_capture_modules(): void {
+		if ( $this->module_enabled( 'free_material_compatibility' ) ) {
+			$this->free_material_capture->register_hooks();
+		}
+		if ( $this->module_enabled( 'service_interest_compatibility' ) ) {
+			$this->service_interest_capture->register_hooks();
+		}
 	}
 
 	public function load_textdomain(): void {
@@ -103,8 +111,27 @@ class CRM_Leads_Capture_Plugin {
 	}
 
 	public function register_capture_profiles(): void {
-		( new CRM_Leads_Capture_Profile_Defaults( $this->settings ) )->register( $this->capture_profiles );
+		if ( $this->module_enabled( 'commercial_profiles' ) ) {
+			( new CRM_Leads_Capture_Profile_Defaults( $this->settings ) )->register( $this->capture_profiles );
+		}
 		$this->profile_repository->register_profiles( $this->capture_profiles );
+	}
+
+	public function module_enabled( string $module ): bool {
+		$defaults = array(
+			'commercial_profiles'           => $this->settings->commercial_profiles_enabled(),
+			'free_material_compatibility'   => $this->settings->free_material_compatibility_enabled(),
+			'service_interest_compatibility' => $this->settings->service_interest_compatibility_enabled(),
+		);
+		$enabled = $defaults[ $module ] ?? false;
+
+		/**
+		 * Filters whether an optional capture module is active for this request.
+		 *
+		 * @param bool   $enabled Whether the module is enabled in settings.
+		 * @param string $module  Stable module identifier.
+		 */
+		return (bool) apply_filters( 'crm_leads_capture_module_enabled', $enabled, $module );
 	}
 
 	public function settings(): CRM_Leads_Capture_Settings {

@@ -95,6 +95,27 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		$this->assertSame( 10, has_action( 'admin_post_' . CRM_Leads_Capture_Free_Material_Capture::LEGACY_ACTION, array( crm_leads_capture()->free_material_capture(), 'handle_request' ) ) );
 	}
 
+	public function test_missing_material_plugin_notice_only_appears_when_configuration_exists(): void {
+		$administrator_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $administrator_id );
+
+		ob_start();
+		$this->capture->render_free_materials_notice();
+		$without_configuration = (string) ob_get_clean();
+		$this->assertSame( '', $without_configuration );
+		$this->assertFalse( $this->capture->has_material_configuration() );
+
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, CRM_Leads_Capture_Free_Material_Capture::META_LEGACY_LIST_ID, '321' );
+		ob_start();
+		$this->capture->render_free_materials_notice();
+		$with_configuration = (string) ob_get_clean();
+
+		$this->assertTrue( $this->capture->has_material_configuration() );
+		$this->assertStringContainsString( 'material_gratuito', $with_configuration );
+		wp_set_current_user( 0 );
+	}
+
 	public function test_builds_transient_generic_profile_from_existing_material_metadata(): void {
 		$material_id = $this->create_material(
 			array(

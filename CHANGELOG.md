@@ -12,6 +12,8 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
   completo de campos customizados para Brevo e RD Station.
 - Adiciona administração de perfis, associação por página, diagnóstico de
   overrides antigos, matriz de regressão e checklist seguro de atualização.
+- Torna perfis comerciais e adaptadores legados módulos opcionais, evitando
+  hooks, assets e avisos específicos em sites que usam apenas o núcleo genérico.
 
 ## 0.6.1 - captura em site privado
 

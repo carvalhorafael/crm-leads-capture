@@ -25,6 +25,10 @@ O registry também recebe dois perfis comerciais nativos:
 - `coo-as-a-service`;
 - `speaker-invitation`.
 
+Esse registro depende do módulo **Perfis comerciais**. Sites que não oferecem
+esses formulários podem desativá-lo sem afetar o registry, o processador ou os
+perfis próprios.
+
 Perfis salvos pelo administrador são carregados depois dos padrões nativos. Um
 perfil persistido com o mesmo slug substitui o padrão de forma explícita.
 

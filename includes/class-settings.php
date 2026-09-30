@@ -71,6 +71,10 @@ class CRM_Leads_Capture_Settings {
 		add_settings_section( 'crm_leads_capture_general_section', __( 'General', 'crm-leads-capture' ), array( $this, 'render_provider_section' ), $this->settings_tab_page( 'general' ) );
 		add_settings_field( 'crm_leads_capture_active_provider', __( 'Default provider', 'crm-leads-capture' ), array( $this, 'render_active_provider_field' ), $this->settings_tab_page( 'general' ), 'crm_leads_capture_general_section', array( 'label_for' => 'crm_leads_capture_active_provider' ) );
 		add_settings_field( 'crm_leads_capture_default_delivery_url', __( 'URL de entrega padrão', 'crm-leads-capture' ), array( $this, 'render_default_delivery_url_field' ), $this->settings_tab_page( 'general' ), 'crm_leads_capture_general_section', array( 'label_for' => 'crm_leads_capture_default_delivery_url' ) );
+		add_settings_section( 'crm_leads_capture_modules_section', __( 'Módulos opcionais', 'crm-leads-capture' ), array( $this, 'render_modules_section' ), $this->settings_tab_page( 'general' ) );
+		add_settings_field( 'crm_leads_capture_commercial_profiles', __( 'Perfis comerciais', 'crm-leads-capture' ), array( $this, 'render_commercial_profiles_field' ), $this->settings_tab_page( 'general' ), 'crm_leads_capture_modules_section' );
+		add_settings_field( 'crm_leads_capture_free_material_compatibility', __( 'Materiais gratuitos', 'crm-leads-capture' ), array( $this, 'render_free_material_compatibility_field' ), $this->settings_tab_page( 'general' ), 'crm_leads_capture_modules_section' );
+		add_settings_field( 'crm_leads_capture_service_interest_compatibility', __( 'Formulário legado de COO', 'crm-leads-capture' ), array( $this, 'render_service_interest_compatibility_field' ), $this->settings_tab_page( 'general' ), 'crm_leads_capture_modules_section' );
 
 		add_settings_section( 'crm_leads_capture_messages_section', __( 'Messages', 'crm-leads-capture' ), array( $this, 'render_messages_section' ), $this->settings_tab_page( 'messages' ) );
 		add_settings_field( 'crm_leads_capture_success_message', __( 'Mensagem de sucesso', 'crm-leads-capture' ), array( $this, 'render_success_message_field' ), $this->settings_tab_page( 'messages' ), 'crm_leads_capture_messages_section', array( 'label_for' => 'crm_leads_capture_success_message' ) );
@@ -105,6 +109,9 @@ class CRM_Leads_Capture_Settings {
 
 		$current_providers = isset( $current['providers'] ) && is_array( $current['providers'] ) ? $current['providers'] : array();
 		$input_providers   = isset( $input['providers'] ) && is_array( $input['providers'] ) ? $input['providers'] : array();
+		$current_modules   = isset( $current['modules'] ) && is_array( $current['modules'] ) ? $current['modules'] : array();
+		$input_modules     = isset( $input['modules'] ) && is_array( $input['modules'] ) ? $input['modules'] : array();
+		$modules_submitted = array_key_exists( 'modules', $input );
 
 		$brevo_current = isset( $current_providers['brevo'] ) && is_array( $current_providers['brevo'] ) ? $current_providers['brevo'] : array();
 		$brevo_input   = isset( $input_providers['brevo'] ) && is_array( $input_providers['brevo'] ) ? $input_providers['brevo'] : array();
@@ -128,6 +135,11 @@ class CRM_Leads_Capture_Settings {
 
 		return array(
 			'active_provider' => $provider,
+			'modules'         => array(
+				'commercial_profiles'          => $this->sanitize_module_enabled( 'commercial_profiles', $input_modules, $current_modules, $modules_submitted ),
+				'free_material_compatibility'  => $this->sanitize_module_enabled( 'free_material_compatibility', $input_modules, $current_modules, $modules_submitted ),
+				'service_interest_compatibility' => $this->sanitize_module_enabled( 'service_interest_compatibility', $input_modules, $current_modules, $modules_submitted ),
+			),
 			'providers'       => array(
 				'brevo'      => array(
 					'enabled'         => $this->sanitize_provider_enabled( 'brevo', $input_providers, $brevo_current, true ),
@@ -152,6 +164,18 @@ class CRM_Leads_Capture_Settings {
 		$provider = $this->option_string( 'active_provider' );
 
 		return in_array( $provider, array( 'brevo', 'rd_station' ), true ) ? $provider : 'brevo';
+	}
+
+	public function commercial_profiles_enabled(): bool {
+		return $this->module_enabled( 'commercial_profiles' );
+	}
+
+	public function free_material_compatibility_enabled(): bool {
+		return $this->module_enabled( 'free_material_compatibility' );
+	}
+
+	public function service_interest_compatibility_enabled(): bool {
+		return $this->module_enabled( 'service_interest_compatibility' );
 	}
 
 	public function brevo_api_key(): string {
@@ -307,6 +331,9 @@ class CRM_Leads_Capture_Settings {
 				<li><?php echo esc_html__( 'Provider ativo pronto para envios:', 'crm-leads-capture' ) . ' ' . esc_html( '' === $this->provider_configuration_error() ? __( 'Sim', 'crm-leads-capture' ) : __( 'Não', 'crm-leads-capture' ) ); ?></li>
 				<li><?php echo esc_html__( 'Brevo API key:', 'crm-leads-capture' ) . ' ' . esc_html( '' !== $this->brevo_api_key() ? __( 'Configurada', 'crm-leads-capture' ) : __( 'Não configurada', 'crm-leads-capture' ) ); ?></li>
 				<li><?php echo esc_html__( 'RD Station API key:', 'crm-leads-capture' ) . ' ' . esc_html( '' !== $this->rd_station_api_key() ? __( 'Configurada', 'crm-leads-capture' ) : __( 'Não configurada', 'crm-leads-capture' ) ); ?></li>
+				<li><?php echo esc_html__( 'Perfis comerciais:', 'crm-leads-capture' ) . ' ' . esc_html( $this->commercial_profiles_enabled() ? __( 'Ativos', 'crm-leads-capture' ) : __( 'Inativos', 'crm-leads-capture' ) ); ?></li>
+				<li><?php echo esc_html__( 'Compatibilidade de materiais:', 'crm-leads-capture' ) . ' ' . esc_html( $this->free_material_compatibility_enabled() ? __( 'Ativa', 'crm-leads-capture' ) : __( 'Inativa', 'crm-leads-capture' ) ); ?></li>
+				<li><?php echo esc_html__( 'Compatibilidade do formulário antigo de COO:', 'crm-leads-capture' ) . ' ' . esc_html( $this->service_interest_compatibility_enabled() ? __( 'Ativa', 'crm-leads-capture' ) : __( 'Inativa', 'crm-leads-capture' ) ); ?></li>
 				<li><?php echo esc_html__( 'Logs técnicos:', 'crm-leads-capture' ) . ' ' . esc_html( ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ? __( 'Ativos via WP_DEBUG', 'crm-leads-capture' ) : __( 'Inativos', 'crm-leads-capture' ) ); ?></li>
 			</ul>
 		</div>
@@ -338,6 +365,22 @@ class CRM_Leads_Capture_Settings {
 		/>
 		<p class="description"><?php echo esc_html__( 'Usada quando o material gratuito não define uma URL de entrega própria.', 'crm-leads-capture' ); ?></p>
 		<?php
+	}
+
+	public function render_modules_section(): void {
+		echo '<p>' . esc_html__( 'Ative apenas os fluxos específicos usados neste site. O núcleo genérico e os perfis criados no admin permanecem disponíveis.', 'crm-leads-capture' ) . '</p>';
+	}
+
+	public function render_commercial_profiles_field(): void {
+		$this->render_module_field( 'commercial_profiles', 'crm_leads_capture_commercial_profiles', $this->commercial_profiles_enabled(), __( 'Registrar os perfis nativos de COO as a Service e convite para palestras.', 'crm-leads-capture' ) );
+	}
+
+	public function render_free_material_compatibility_field(): void {
+		$this->render_module_field( 'free_material_compatibility', 'crm_leads_capture_free_material_compatibility', $this->free_material_compatibility_enabled(), __( 'Ativar endpoints, metaboxes e contratos legados de materiais gratuitos.', 'crm-leads-capture' ) );
+	}
+
+	public function render_service_interest_compatibility_field(): void {
+		$this->render_module_field( 'service_interest_compatibility', 'crm_leads_capture_service_interest_compatibility', $this->service_interest_compatibility_enabled(), __( 'Ativar action, endpoints e assets do formulário antigo de COO.', 'crm-leads-capture' ) );
 	}
 
 	public function render_brevo_section(): void {
@@ -462,6 +505,22 @@ class CRM_Leads_Capture_Settings {
 		<?php
 	}
 
+	private function render_module_field( string $module, string $id, bool $enabled, string $description ): void {
+		?>
+		<label for="<?php echo esc_attr( $id ); ?>">
+			<input type="hidden" name="<?php echo esc_attr( self::OPTION_SETTINGS ); ?>[modules][<?php echo esc_attr( $module ); ?>]" value="0" />
+			<input
+				type="checkbox"
+				id="<?php echo esc_attr( $id ); ?>"
+				name="<?php echo esc_attr( self::OPTION_SETTINGS ); ?>[modules][<?php echo esc_attr( $module ); ?>]"
+				value="1"
+				<?php checked( $enabled ); ?>
+			/>
+			<?php echo esc_html( $description ); ?>
+		</label>
+		<?php
+	}
+
 	private function render_secret_field( string $provider, string $key, string $id, bool $constant_configured, string $constant_message, bool $stored_configured ): void {
 		?>
 		<input type="password" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( self::OPTION_SETTINGS ); ?>[providers][<?php echo esc_attr( $provider ); ?>][<?php echo esc_attr( $key ); ?>]" value="" autocomplete="new-password" class="regular-text" <?php disabled( $constant_configured ); ?> />
@@ -516,6 +575,25 @@ class CRM_Leads_Capture_Settings {
 		}
 
 		return (bool) $settings[ $key ];
+	}
+
+	private function module_enabled( string $module ): bool {
+		$options = $this->options();
+		$modules = isset( $options['modules'] ) && is_array( $options['modules'] ) ? $options['modules'] : array();
+
+		return ! array_key_exists( $module, $modules ) || (bool) $modules[ $module ];
+	}
+
+	/**
+	 * @param array<string, mixed> $input_modules
+	 * @param array<string, mixed> $current_modules
+	 */
+	private function sanitize_module_enabled( string $module, array $input_modules, array $current_modules, bool $submitted ): bool {
+		if ( $submitted ) {
+			return ! empty( $input_modules[ $module ] );
+		}
+
+		return array_key_exists( $module, $current_modules ) ? (bool) $current_modules[ $module ] : true;
 	}
 
 	/**

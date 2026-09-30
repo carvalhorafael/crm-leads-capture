@@ -14,7 +14,8 @@ Configurações > CRM Leads Capture
 A tela é organizada em abas:
 
 - **General**: define o único provider usado por todas as capturas da instalação.
-  Também define uma URL de entrega padrão.
+  Também define uma URL de entrega padrão e quais módulos específicos do site
+  ficam ativos.
 - **Messages**: personaliza mensagens públicas de sucesso e erro.
 - **RD Station**: ativa o provider RD Station e configura suas credenciais e
   padrões de conversão.
@@ -23,6 +24,37 @@ A tela é organizada em abas:
 Mais de um provider pode permanecer configurado ao mesmo tempo, mas somente o
 provider global escolhido na aba **General** recebe envios. Materiais, páginas e
 perfis não podem sobrescrever essa escolha.
+
+## Módulos opcionais
+
+O núcleo genérico, a administração de perfis e os providers ficam sempre
+disponíveis. Três módulos podem ser desligados independentemente:
+
+- **Perfis comerciais**: registra `coo-as-a-service` e `speaker-invitation`;
+- **Materiais gratuitos**: ativa actions, REST, metaboxes, avisos e assets do
+  contrato de materiais;
+- **Formulário legado de COO**: ativa a action, REST, helpers e assets usados
+  pelo template anterior ao contrato genérico.
+
+Os três começam ativos para preservar sites existentes. Em uma instalação que
+usa apenas perfis próprios, podem ser desligados na aba **General**. Desativar
+perfis comerciais não remove nem desativa perfis criados no admin.
+
+Ambientes que controlam módulos por código podem usar o filtro:
+
+```php
+add_filter(
+	'crm_leads_capture_module_enabled',
+	static function ( bool $enabled, string $module ): bool {
+		return 'free_material_compatibility' === $module ? false : $enabled;
+	},
+	10,
+	2
+);
+```
+
+Identificadores: `commercial_profiles`, `free_material_compatibility` e
+`service_interest_compatibility`.
 
 ## Estrutura da option
 
@@ -38,6 +70,11 @@ Campos principais:
 array(
     'active_provider' => 'brevo',
     'default_delivery_url' => 'https://example.com/obrigado',
+    'modules' => array(
+        'commercial_profiles' => true,
+        'free_material_compatibility' => true,
+        'service_interest_compatibility' => true,
+    ),
     'providers'       => array(
         'brevo'      => array(
             'enabled'         => true,

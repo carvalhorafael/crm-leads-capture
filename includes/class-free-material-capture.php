@@ -74,7 +74,7 @@ class CRM_Leads_Capture_Free_Material_Capture {
 	}
 
 	public function render_free_materials_notice(): void {
-		if ( post_type_exists( 'material_gratuito' ) || ! current_user_can( 'manage_options' ) ) {
+		if ( post_type_exists( 'material_gratuito' ) || ! current_user_can( 'manage_options' ) || ! $this->has_material_configuration() ) {
 			return;
 		}
 
@@ -110,6 +110,25 @@ class CRM_Leads_Capture_Free_Material_Capture {
 			</p>
 		</div>
 		<?php
+	}
+
+	public function has_material_configuration(): bool {
+		global $wpdb;
+
+		$keys = array(
+			self::META_LIST_ID,
+			self::META_DELIVERY_URL,
+			self::META_PROVIDER,
+			self::META_RD_STATION_CONVERSION_IDENTIFIER,
+			self::META_RD_STATION_TAGS,
+			self::META_LEGACY_LIST_ID,
+			self::META_LEGACY_DELIVERY_URL_BREVO,
+			self::META_LEGACY_DELIVERY_URL,
+		);
+		$placeholders = implode( ', ', array_fill( 0, count( $keys ), '%s' ) );
+		$query        = $wpdb->prepare( "SELECT 1 FROM {$wpdb->postmeta} WHERE meta_key IN ({$placeholders}) LIMIT 1", $keys );
+
+		return null !== $wpdb->get_var( $query );
 	}
 
 	public function legacy_provider_override_count(): int {

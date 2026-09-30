@@ -31,6 +31,11 @@ O provider ativo é escolhido em `Configurações > CRM Leads Capture` e determi
 todos os envios da instalação. Materiais, páginas e formulários não podem trocar
 o provider global.
 
+Na mesma tela, módulos específicos podem ser desligados. Um site que usa apenas
+perfis próprios não precisa registrar os perfis comerciais nem carregar os
+adaptadores legados de materiais ou COO. Os módulos permanecem ativos por
+padrão apenas para preservar instalações existentes.
+
 ## Configuração
 
 Opção nova:

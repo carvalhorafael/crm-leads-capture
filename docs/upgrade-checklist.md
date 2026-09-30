@@ -13,8 +13,11 @@ está em produção para rollback.
 4. Se o provider for Brevo, confirme a lista padrão ou a lista de cada material.
 5. Se for RD Station, confirme o identificador de conversão padrão ou o de cada
    material.
-6. Abra um material gratuito e anote sua URL de entrega.
-7. Verifique se o admin mostra o aviso de configuração legada de provider. O
+6. Em **General > Módulos opcionais**, mantenha ativos somente os fluxos usados
+   no site. Em uma primeira atualização, preserve os módulos existentes até
+   concluir os smoke tests.
+7. Abra um material gratuito e anote sua URL de entrega, quando esse módulo for usado.
+8. Verifique se o admin mostra o aviso de configuração legada de provider. O
    aviso é diagnóstico: o valor antigo será preservado, mas todos os envios
    usam o provider global.
 
