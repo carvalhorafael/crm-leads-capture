@@ -28,15 +28,13 @@ perfis não podem sobrescrever essa escolha.
 ## Módulos opcionais
 
 O núcleo genérico, a administração de perfis e os providers ficam sempre
-disponíveis. Três módulos podem ser desligados independentemente:
+disponíveis. Dois módulos podem ser desligados independentemente:
 
 - **Perfis comerciais**: registra `coo-as-a-service` e `speaker-invitation`;
 - **Materiais gratuitos**: ativa actions, REST, metaboxes, avisos e assets do
-  contrato de materiais;
-- **Formulário legado de COO**: ativa a action, REST, helpers e assets usados
-  pelo template anterior ao contrato genérico.
+  contrato de materiais.
 
-Os três começam ativos para preservar sites existentes. Em uma instalação que
+Os dois começam ativos para preservar sites existentes. Em uma instalação que
 usa apenas perfis próprios, podem ser desligados na aba **General**. Desativar
 perfis comerciais não remove nem desativa perfis criados no admin.
 
@@ -53,8 +51,7 @@ add_filter(
 );
 ```
 
-Identificadores: `commercial_profiles`, `free_material_compatibility` e
-`service_interest_compatibility`.
+Identificadores: `commercial_profiles` e `free_material_compatibility`.
 
 ## Estrutura da option
 
@@ -73,7 +70,6 @@ array(
     'modules' => array(
         'commercial_profiles' => true,
         'free_material_compatibility' => true,
-        'service_interest_compatibility' => true,
     ),
     'providers'       => array(
         'brevo'      => array(

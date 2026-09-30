@@ -7,13 +7,16 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 - Adiciona perfis de captura reutilizáveis com provider global e frontend
   genérico.
 - Migra materiais gratuitos, COO as a Service e convites para palestras para o
-  pipeline comum, preservando contratos legados necessários.
+  pipeline comum, preservando apenas os contratos legados necessários.
 - Remove o armazenamento local de interesses comerciais e adiciona mapeamento
   completo de campos customizados para Brevo e RD Station.
 - Adiciona administração de perfis, associação por página, diagnóstico de
   overrides antigos, matriz de regressão e checklist seguro de atualização.
-- Torna perfis comerciais e adaptadores legados módulos opcionais, evitando
-  hooks, assets e avisos específicos em sites que usam apenas o núcleo genérico.
+- Torna perfis comerciais e a compatibilidade de materiais módulos opcionais,
+  evitando hooks, assets e avisos específicos em sites que usam apenas o núcleo
+  genérico.
+- Remove o contrato de COO que ainda não havia sido usado; o formulário nasce
+  diretamente no perfil genérico `coo-as-a-service`.
 
 ## 0.6.1 - captura em site privado
 

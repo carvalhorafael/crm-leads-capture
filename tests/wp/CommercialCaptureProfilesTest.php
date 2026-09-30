@@ -5,7 +5,7 @@
  * @package CRM_Leads_Capture
  */
 
-class CRM_Leads_Capture_Service_Test_Provider implements CRM_Leads_Capture_Provider_Interface {
+class CRM_Leads_Capture_Commercial_Test_Provider implements CRM_Leads_Capture_Provider_Interface {
 	/** @var array<string, mixed>|null */
 	public ?array $last_payload = null;
 
@@ -52,59 +52,49 @@ class CRM_Leads_Capture_Service_Test_Provider implements CRM_Leads_Capture_Provi
 	}
 }
 
-class ServiceInterestCaptureTest extends WP_UnitTestCase {
-	private CRM_Leads_Capture_Service_Test_Provider $provider;
-	private CRM_Leads_Capture_Service_Interest_Capture $capture;
+class CommercialCaptureProfilesTest extends WP_UnitTestCase {
+	private CRM_Leads_Capture_Commercial_Test_Provider $provider;
+	private CRM_Leads_Capture_Frontend $frontend;
+	private CRM_Leads_Capture_Profile_Registry $profiles;
 
 	public function set_up(): void {
 		parent::set_up();
-		$this->provider = new CRM_Leads_Capture_Service_Test_Provider();
-		$this->capture  = new CRM_Leads_Capture_Service_Interest_Capture(
-			crm_leads_capture()->settings(),
-			crm_leads_capture()->providers(),
-			fn(): CRM_Leads_Capture_Service_Test_Provider => $this->provider,
-			crm_leads_capture()->logger(),
-			crm_leads_capture()->capture_profiles()
+
+		$this->profiles = new CRM_Leads_Capture_Profile_Registry();
+		( new CRM_Leads_Capture_Profile_Defaults( crm_leads_capture()->settings() ) )->register( $this->profiles );
+		$this->provider = new CRM_Leads_Capture_Commercial_Test_Provider();
+		$providers      = new CRM_Leads_Capture_Provider_Registry();
+		$providers->register( $this->provider );
+		$processor = new CRM_Leads_Capture_Processor(
+			$this->profiles,
+			$providers,
+			static fn(): string => 'brevo',
+			static fn( string $nonce, string $action ): bool => false !== wp_verify_nonce( $nonce, $action )
 		);
-		update_option(
-			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
-			array(
-				'active_provider' => 'brevo',
-				'providers'       => array(
-					'brevo' => array( 'enabled' => true, 'default_list_id' => 321 ),
-				),
-			)
-		);
+		$this->frontend = new CRM_Leads_Capture_Frontend( $this->profiles, $processor, crm_leads_capture()->settings() );
 	}
 
-	public function tear_down(): void {
-		delete_option( CRM_Leads_Capture_Settings::OPTION_SETTINGS );
-		parent::tear_down();
-	}
-
-	public function test_plugin_keeps_legacy_transport_without_registering_post_type(): void {
-		$adapter = crm_leads_capture()->service_interest_capture();
-		$this->assertSame( 10, has_action( 'admin_post_nopriv_' . CRM_Leads_Capture_Service_Interest_Capture::ACTION, array( $adapter, 'handle_request' ) ) );
-		$this->assertFalse( post_type_exists( CRM_Leads_Capture_Service_Interest_Capture::POST_TYPE ) );
-		$this->assertFalse( has_action( 'init', array( $adapter, 'register_post_type' ) ) );
-	}
-
-	public function test_builtin_commercial_profiles_are_available_with_independent_messages(): void {
-		$coo     = crm_leads_capture()->capture_profiles()->resolve( CRM_Leads_Capture_Profile_Defaults::COO_SLUG );
-		$speaker = crm_leads_capture()->capture_profiles()->resolve( CRM_Leads_Capture_Profile_Defaults::SPEAKER_SLUG );
+	public function test_builtin_commercial_profiles_use_only_generic_contract(): void {
+		$coo     = $this->profiles->resolve( CRM_Leads_Capture_Profile_Defaults::COO_SLUG );
+		$speaker = $this->profiles->resolve( CRM_Leads_Capture_Profile_Defaults::SPEAKER_SLUG );
 
 		$this->assertNotNull( $coo );
 		$this->assertNotNull( $speaker );
+		$this->assertSame( 'crm_leads_capture_coo-as-a-service', $coo->nonce_action() );
 		$this->assertArrayHasKey( 'challenge', $coo->fields() );
 		$this->assertArrayHasKey( 'event_date', $speaker->fields() );
 		$this->assertNotSame( $coo->success_behavior()['message'], $speaker->success_behavior()['message'] );
+
+		$fields = $this->frontend->form_fields( CRM_Leads_Capture_Profile_Defaults::COO_SLUG );
+		$this->assertStringContainsString( 'name="action" value="crm_leads_capture_submit"', $fields );
+		$this->assertStringContainsString( 'name="crm_leads_capture_profile" value="coo-as-a-service"', $fields );
 	}
 
-	public function test_legacy_coo_form_uses_canonical_pipeline_without_local_persistence(): void {
+	public function test_coo_profile_uses_generic_pipeline_without_local_persistence(): void {
 		global $wpdb;
-		$before = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", CRM_Leads_Capture_Service_Interest_Capture::POST_TYPE ) );
-		$result = $this->capture->process_submission( $this->valid_coo_request(), 'https://example.com/coo' );
-		$after  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", CRM_Leads_Capture_Service_Interest_Capture::POST_TYPE ) );
+		$before = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", 'crm_service_interest' ) );
+		$result = $this->frontend->process_submission( CRM_Leads_Capture_Profile_Defaults::COO_SLUG, $this->valid_coo_request(), 'https://example.com/coo' );
+		$after  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", 'crm_service_interest' ) );
 
 		$this->assertTrue( $result->is_successful() );
 		$this->assertSame( $before, $after );
@@ -120,23 +110,28 @@ class ServiceInterestCaptureTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'lead_id', $result->data() );
 	}
 
-	public function test_rejects_invalid_coo_fields_without_sending_or_storing(): void {
-		$result = $this->capture->process_submission( $this->valid_coo_request( array( 'consent' => '' ) ) );
+	public function test_invalid_coo_fields_are_rejected_without_sending_or_storing(): void {
+		$result = $this->frontend->process_submission(
+			CRM_Leads_Capture_Profile_Defaults::COO_SLUG,
+			$this->valid_coo_request( array( 'consent' => '' ) )
+		);
 
 		$this->assertFalse( $result->is_successful() );
-		$this->assertSame( 'invalid_lead', $result->data()['code'] );
+		$this->assertSame( 'invalid_fields', $result->data()['code'] );
 		$this->assertNull( $this->provider->last_payload );
-		$this->assertFalse( post_type_exists( CRM_Leads_Capture_Service_Interest_Capture::POST_TYPE ) );
+		$this->assertFalse( post_type_exists( 'crm_service_interest' ) );
 	}
 
-	public function test_provider_failure_returns_controlled_message_and_keeps_rest_on_page(): void {
+	public function test_provider_failure_returns_controlled_generic_rest_response(): void {
 		$this->provider->should_succeed = false;
-		$request = new WP_REST_Request( 'POST', '/' . CRM_Leads_Capture_Service_Interest_Capture::REST_NAMESPACE . CRM_Leads_Capture_Service_Interest_Capture::REST_ROUTE );
+		$request = new WP_REST_Request( 'POST', '/crm-leads-capture/v1/capture/coo-as-a-service' );
+		$request->set_url_params( array( 'profile' => CRM_Leads_Capture_Profile_Defaults::COO_SLUG ) );
 		foreach ( $this->valid_coo_request() as $key => $value ) {
 			$request->set_param( $key, $value );
 		}
+		$request->set_param( CRM_Leads_Capture_Frontend::REST_NONCE_FIELD, $this->valid_coo_request()['_wpnonce'] );
 
-		$response = $this->capture->handle_rest_request( $request );
+		$response = $this->frontend->handle_rest_request( $request );
 		$data     = $response->get_data();
 
 		$this->assertFalse( $data['success'] );
@@ -146,21 +141,10 @@ class ServiceInterestCaptureTest extends WP_UnitTestCase {
 	}
 
 	public function test_speaker_profile_sends_every_required_field_without_storage(): void {
-		$profiles = new CRM_Leads_Capture_Profile_Registry();
-		$profiles->register( ( new CRM_Leads_Capture_Profile_Defaults( crm_leads_capture()->settings() ) )->speaker_profile() );
-		$providers = new CRM_Leads_Capture_Provider_Registry();
-		$providers->register( $this->provider );
-		$processor = new CRM_Leads_Capture_Processor(
-			$profiles,
-			$providers,
-			static fn(): string => 'brevo',
-			static fn( string $nonce, string $action ): bool => false !== wp_verify_nonce( $nonce, $action )
-		);
-
-		$result = $processor->process(
+		$result = $this->frontend->process_submission(
 			CRM_Leads_Capture_Profile_Defaults::SPEAKER_SLUG,
 			$this->valid_speaker_request(),
-			array( 'page_url' => 'https://example.com/palestras' )
+			'https://example.com/palestras'
 		);
 
 		$this->assertTrue( $result->is_successful() );
@@ -169,27 +153,15 @@ class ServiceInterestCaptureTest extends WP_UnitTestCase {
 		$this->assertSame( '2027-05-20', $this->provider->last_payload['custom_fields']['event_date'] );
 		$this->assertSame( 'hibrido', $this->provider->last_payload['custom_fields']['format'] );
 		$this->assertSame( 'https://example.com/palestras', $this->provider->last_payload['context']['page_url'] );
-		$this->assertFalse( post_type_exists( CRM_Leads_Capture_Service_Interest_Capture::POST_TYPE ) );
-	}
-
-	public function test_current_message_supports_successful_server_fallback(): void {
-		$_GET['crm_leads_capture'] = 'success';
-		$_GET['capture_type']      = 'service_interest';
-		$message = $this->capture->current_message();
-		$markup  = $this->capture->render_message_shortcode();
-
-		$this->assertSame( 'success', $message['tone'] );
-		$this->assertStringContainsString( 'data-feedback-tone="success"', $markup );
-		$this->assertStringContainsString( 'analisar pessoalmente', $markup );
-		unset( $_GET['crm_leads_capture'], $_GET['capture_type'] );
+		$this->assertFalse( post_type_exists( 'crm_service_interest' ) );
 	}
 
 	/** @param array<string, mixed> $overrides @return array<string, mixed> */
 	private function valid_coo_request( array $overrides = array() ): array {
 		return array_merge(
 			array(
-				CRM_Leads_Capture_Service_Interest_Capture::NONCE_FIELD => wp_create_nonce( CRM_Leads_Capture_Service_Interest_Capture::NONCE_ACTION ),
-				CRM_Leads_Capture_Service_Interest_Capture::HONEYPOT_FIELD => '',
+				'_wpnonce' => wp_create_nonce( 'crm_leads_capture_' . CRM_Leads_Capture_Profile_Defaults::COO_SLUG ),
+				'crm_leads_capture_website' => '',
 				'name' => 'Rafael Carvalho', 'email' => 'rafael@example.com', 'whatsapp' => '+55 21 99999-9999',
 				'company' => 'Empresa Teste', 'role' => 'founder', 'company_url' => 'https://example.com',
 				'challenge' => 'Aprovo decisões demais.', 'consent' => '1',

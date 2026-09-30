@@ -33,7 +33,7 @@ o provider global.
 
 Na mesma tela, módulos específicos podem ser desligados. Um site que usa apenas
 perfis próprios não precisa registrar os perfis comerciais nem carregar os
-adaptadores legados de materiais ou COO. Os módulos permanecem ativos por
+adaptadores de materiais. Os módulos permanecem ativos por
 padrão apenas para preservar instalações existentes.
 
 ## Configuração

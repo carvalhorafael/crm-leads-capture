@@ -30,8 +30,6 @@ class CRM_Leads_Capture_Plugin {
 
 	private CRM_Leads_Capture_Free_Material_Capture $free_material_capture;
 
-	private CRM_Leads_Capture_Service_Interest_Capture $service_interest_capture;
-
 	private CRM_Leads_Capture_GitHub_Updater $github_updater;
 
 	private CRM_Leads_Capture_Logger $logger;
@@ -56,14 +54,6 @@ class CRM_Leads_Capture_Plugin {
 		$this->profile_admin = new CRM_Leads_Capture_Profile_Admin( $this->profile_repository, $this->settings );
 
 		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
-		$this->service_interest_capture = new CRM_Leads_Capture_Service_Interest_Capture(
-			$this->settings,
-			$this->providers,
-			null,
-			$this->logger,
-			$this->capture_profiles,
-			$this->capture_processor
-		);
 		$this->github_updater        = new CRM_Leads_Capture_GitHub_Updater( CRM_LEADS_CAPTURE_FILE, CRM_LEADS_CAPTURE_VERSION );
 	}
 
@@ -97,9 +87,6 @@ class CRM_Leads_Capture_Plugin {
 		if ( $this->module_enabled( 'free_material_compatibility' ) ) {
 			$this->free_material_capture->register_hooks();
 		}
-		if ( $this->module_enabled( 'service_interest_compatibility' ) ) {
-			$this->service_interest_capture->register_hooks();
-		}
 	}
 
 	public function load_textdomain(): void {
@@ -119,9 +106,8 @@ class CRM_Leads_Capture_Plugin {
 
 	public function module_enabled( string $module ): bool {
 		$defaults = array(
-			'commercial_profiles'           => $this->settings->commercial_profiles_enabled(),
-			'free_material_compatibility'   => $this->settings->free_material_compatibility_enabled(),
-			'service_interest_compatibility' => $this->settings->service_interest_compatibility_enabled(),
+			'commercial_profiles'         => $this->settings->commercial_profiles_enabled(),
+			'free_material_compatibility' => $this->settings->free_material_compatibility_enabled(),
 		);
 		$enabled = $defaults[ $module ] ?? false;
 
@@ -140,10 +126,6 @@ class CRM_Leads_Capture_Plugin {
 
 	public function free_material_capture(): CRM_Leads_Capture_Free_Material_Capture {
 		return $this->free_material_capture;
-	}
-
-	public function service_interest_capture(): CRM_Leads_Capture_Service_Interest_Capture {
-		return $this->service_interest_capture;
 	}
 
 	public function logger(): CRM_Leads_Capture_Logger {

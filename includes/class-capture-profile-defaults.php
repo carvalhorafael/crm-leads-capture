@@ -71,9 +71,6 @@ class CRM_Leads_Capture_Profile_Defaults {
 					),
 				),
 				'success' => array( 'message' => $this->settings->service_success_message() ),
-				'nonce_action'   => 'crm_leads_capture_service_interest',
-				'nonce_field'    => '_wpnonce',
-				'honeypot_field' => 'crm_leads_capture_website',
 			)
 		);
 	}

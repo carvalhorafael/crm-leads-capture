@@ -3,9 +3,8 @@
 O núcleo genérico representa cada formulário por um perfil de captura. O
 [contrato genérico de frontend](capture-frontend.md) já permite que novos
 formulários usem REST com aprimoramento progressivo ou `admin-post.php` sem
-JavaScript. Materiais gratuitos e o formulário legado de COO já passam por
-adaptadores do pipeline; os perfis comerciais nativos também atendem novos
-templates diretamente.
+JavaScript. Materiais gratuitos passam por um adaptador do pipeline; os perfis
+comerciais nativos usam diretamente o contrato genérico nos novos templates.
 
 ## Contratos
 
@@ -14,7 +13,8 @@ templates diretamente.
 - `CRM_Leads_Capture_Profile` reúne schema, contexto confiável,
   configuração por provider e comportamento de sucesso.
 - `CRM_Leads_Capture_Profile_Registry` registra e resolve perfis por
-  slug. Adaptadores legados podem construir e registrar perfis em memória.
+  slug. Adaptadores de integrações existentes podem construir e registrar
+  perfis em memória.
 - `CRM_Leads_Capture_Submission` mantém os dados normalizados separados
   em `lead`, `tracking`, `consent` e `custom_fields`.
 - `CRM_Leads_Capture_Processor` verifica nonce e honeypot, normaliza os

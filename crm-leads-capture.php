@@ -47,7 +47,6 @@ require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-rd-station-client.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-rd-station-provider.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-github-updater.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-free-material-capture.php';
-require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-service-interest-capture.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/integrations/class-elementor-form-mapper.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-plugin.php';
 
@@ -70,20 +69,6 @@ function crm_leads_capture_get_free_material_error_message(): string {
  */
 function crm_leads_capture_render_free_material_error_message(): void {
 	crm_leads_capture()->free_material_capture()->render_error_message();
-}
-
-/**
- * Renders the current public message for the service interest form.
- */
-function crm_leads_capture_render_service_interest_message(): void {
-	crm_leads_capture()->service_interest_capture()->render_message();
-}
-
-/**
- * Renders the nonce expected by the service interest form.
- */
-function crm_leads_capture_service_interest_nonce_field(): void {
-	wp_nonce_field( CRM_Leads_Capture_Service_Interest_Capture::NONCE_ACTION );
 }
 
 /**

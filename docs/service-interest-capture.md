@@ -47,6 +47,10 @@ Para convites, o mesmo markup usa `speaker-invitation` nos dois pontos. Cada
 perfil devolve sua própria mensagem de sucesso. Falhas do CRM mantêm o
 formulário na página e exibem somente uma mensagem pública controlada.
 
+O perfil de COO nasceu neste contrato. Não existe action, endpoint, helper,
+asset ou camada de compatibilidade exclusiva para uma versão anterior do
+formulário.
+
 ## Mapeamento dos CRMs
 
 Os dois perfis trazem mapeamentos padrão para todos os campos:
@@ -59,16 +63,3 @@ Os dois perfis trazem mapeamentos padrão para todos os campos:
 Os atributos personalizados precisam existir no CRM com os identificadores
 documentados na configuração dos perfis. Overrides associados a uma página
 continuam tendo precedência sobre os padrões nativos.
-
-## Compatibilidade temporária do COO
-
-O contrato antigo continua disponível durante a migração do tema:
-
-- action `crm_leads_capture_service_interest`;
-- helper `crm_leads_capture_service_interest_nonce_field()`;
-- helper `crm_leads_capture_render_service_interest_message()`;
-- endpoints `/service-interest` e `/service-interest/nonce`.
-
-Esse adaptador encaminha a submissão ao perfil `coo-as-a-service`. Ele não
-registra o post type histórico `crm_service_interest`, não cria tela
-administrativa, não grava metadados e não chama APIs de persistência de posts.

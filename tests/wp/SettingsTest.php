@@ -45,7 +45,6 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertSame( 'brevo', $this->settings->active_provider() );
 		$this->assertTrue( $this->settings->commercial_profiles_enabled() );
 		$this->assertTrue( $this->settings->free_material_compatibility_enabled() );
-		$this->assertTrue( $this->settings->service_interest_compatibility_enabled() );
 	}
 
 	public function test_optional_modules_can_be_disabled_without_changing_provider_configuration(): void {
@@ -66,13 +65,11 @@ class SettingsTest extends WP_UnitTestCase {
 
 		$this->assertTrue( $sanitized['modules']['commercial_profiles'] );
 		$this->assertFalse( $sanitized['modules']['free_material_compatibility'] );
-		$this->assertFalse( $sanitized['modules']['service_interest_compatibility'] );
 		$this->assertSame( 'rd-key', $sanitized['providers']['rd_station']['api_key'] );
 
 		update_option( CRM_Leads_Capture_Settings::OPTION_SETTINGS, $sanitized );
 		$this->assertTrue( $this->settings->commercial_profiles_enabled() );
 		$this->assertFalse( $this->settings->free_material_compatibility_enabled() );
-		$this->assertFalse( $this->settings->service_interest_compatibility_enabled() );
 	}
 
 	public function test_saving_another_tab_preserves_optional_module_state(): void {
@@ -80,9 +77,8 @@ class SettingsTest extends WP_UnitTestCase {
 			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
 			array(
 				'modules' => array(
-					'commercial_profiles'           => false,
-					'free_material_compatibility'   => false,
-					'service_interest_compatibility' => true,
+					'commercial_profiles'         => false,
+					'free_material_compatibility' => false,
 				),
 			)
 		);
@@ -91,7 +87,6 @@ class SettingsTest extends WP_UnitTestCase {
 
 		$this->assertFalse( $sanitized['modules']['commercial_profiles'] );
 		$this->assertFalse( $sanitized['modules']['free_material_compatibility'] );
-		$this->assertTrue( $sanitized['modules']['service_interest_compatibility'] );
 	}
 
 	public function test_upgrade_keeps_legacy_brevo_options_readable_without_migration(): void {

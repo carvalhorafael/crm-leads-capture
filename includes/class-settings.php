@@ -74,7 +74,6 @@ class CRM_Leads_Capture_Settings {
 		add_settings_section( 'crm_leads_capture_modules_section', __( 'Módulos opcionais', 'crm-leads-capture' ), array( $this, 'render_modules_section' ), $this->settings_tab_page( 'general' ) );
 		add_settings_field( 'crm_leads_capture_commercial_profiles', __( 'Perfis comerciais', 'crm-leads-capture' ), array( $this, 'render_commercial_profiles_field' ), $this->settings_tab_page( 'general' ), 'crm_leads_capture_modules_section' );
 		add_settings_field( 'crm_leads_capture_free_material_compatibility', __( 'Materiais gratuitos', 'crm-leads-capture' ), array( $this, 'render_free_material_compatibility_field' ), $this->settings_tab_page( 'general' ), 'crm_leads_capture_modules_section' );
-		add_settings_field( 'crm_leads_capture_service_interest_compatibility', __( 'Formulário legado de COO', 'crm-leads-capture' ), array( $this, 'render_service_interest_compatibility_field' ), $this->settings_tab_page( 'general' ), 'crm_leads_capture_modules_section' );
 
 		add_settings_section( 'crm_leads_capture_messages_section', __( 'Messages', 'crm-leads-capture' ), array( $this, 'render_messages_section' ), $this->settings_tab_page( 'messages' ) );
 		add_settings_field( 'crm_leads_capture_success_message', __( 'Mensagem de sucesso', 'crm-leads-capture' ), array( $this, 'render_success_message_field' ), $this->settings_tab_page( 'messages' ), 'crm_leads_capture_messages_section', array( 'label_for' => 'crm_leads_capture_success_message' ) );
@@ -136,9 +135,8 @@ class CRM_Leads_Capture_Settings {
 		return array(
 			'active_provider' => $provider,
 			'modules'         => array(
-				'commercial_profiles'          => $this->sanitize_module_enabled( 'commercial_profiles', $input_modules, $current_modules, $modules_submitted ),
-				'free_material_compatibility'  => $this->sanitize_module_enabled( 'free_material_compatibility', $input_modules, $current_modules, $modules_submitted ),
-				'service_interest_compatibility' => $this->sanitize_module_enabled( 'service_interest_compatibility', $input_modules, $current_modules, $modules_submitted ),
+				'commercial_profiles'         => $this->sanitize_module_enabled( 'commercial_profiles', $input_modules, $current_modules, $modules_submitted ),
+				'free_material_compatibility' => $this->sanitize_module_enabled( 'free_material_compatibility', $input_modules, $current_modules, $modules_submitted ),
 			),
 			'providers'       => array(
 				'brevo'      => array(
@@ -172,10 +170,6 @@ class CRM_Leads_Capture_Settings {
 
 	public function free_material_compatibility_enabled(): bool {
 		return $this->module_enabled( 'free_material_compatibility' );
-	}
-
-	public function service_interest_compatibility_enabled(): bool {
-		return $this->module_enabled( 'service_interest_compatibility' );
 	}
 
 	public function brevo_api_key(): string {
@@ -333,7 +327,6 @@ class CRM_Leads_Capture_Settings {
 				<li><?php echo esc_html__( 'RD Station API key:', 'crm-leads-capture' ) . ' ' . esc_html( '' !== $this->rd_station_api_key() ? __( 'Configurada', 'crm-leads-capture' ) : __( 'Não configurada', 'crm-leads-capture' ) ); ?></li>
 				<li><?php echo esc_html__( 'Perfis comerciais:', 'crm-leads-capture' ) . ' ' . esc_html( $this->commercial_profiles_enabled() ? __( 'Ativos', 'crm-leads-capture' ) : __( 'Inativos', 'crm-leads-capture' ) ); ?></li>
 				<li><?php echo esc_html__( 'Compatibilidade de materiais:', 'crm-leads-capture' ) . ' ' . esc_html( $this->free_material_compatibility_enabled() ? __( 'Ativa', 'crm-leads-capture' ) : __( 'Inativa', 'crm-leads-capture' ) ); ?></li>
-				<li><?php echo esc_html__( 'Compatibilidade do formulário antigo de COO:', 'crm-leads-capture' ) . ' ' . esc_html( $this->service_interest_compatibility_enabled() ? __( 'Ativa', 'crm-leads-capture' ) : __( 'Inativa', 'crm-leads-capture' ) ); ?></li>
 				<li><?php echo esc_html__( 'Logs técnicos:', 'crm-leads-capture' ) . ' ' . esc_html( ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ? __( 'Ativos via WP_DEBUG', 'crm-leads-capture' ) : __( 'Inativos', 'crm-leads-capture' ) ); ?></li>
 			</ul>
 		</div>
@@ -377,10 +370,6 @@ class CRM_Leads_Capture_Settings {
 
 	public function render_free_material_compatibility_field(): void {
 		$this->render_module_field( 'free_material_compatibility', 'crm_leads_capture_free_material_compatibility', $this->free_material_compatibility_enabled(), __( 'Ativar endpoints, metaboxes e contratos legados de materiais gratuitos.', 'crm-leads-capture' ) );
-	}
-
-	public function render_service_interest_compatibility_field(): void {
-		$this->render_module_field( 'service_interest_compatibility', 'crm_leads_capture_service_interest_compatibility', $this->service_interest_compatibility_enabled(), __( 'Ativar action, endpoints e assets do formulário antigo de COO.', 'crm-leads-capture' ) );
 	}
 
 	public function render_brevo_section(): void {

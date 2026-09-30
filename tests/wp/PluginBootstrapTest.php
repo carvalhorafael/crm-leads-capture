@@ -44,16 +44,14 @@ class PluginBootstrapTest extends WP_UnitTestCase {
 			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
 			array(
 				'modules' => array(
-					'commercial_profiles'           => false,
-					'free_material_compatibility'   => false,
-					'service_interest_compatibility' => false,
+					'commercial_profiles'         => false,
+					'free_material_compatibility' => false,
 				),
 			)
 		);
 
 		$this->assertFalse( crm_leads_capture()->module_enabled( 'commercial_profiles' ) );
 		$this->assertFalse( crm_leads_capture()->module_enabled( 'free_material_compatibility' ) );
-		$this->assertFalse( crm_leads_capture()->module_enabled( 'service_interest_compatibility' ) );
 		$this->assertFalse( crm_leads_capture()->module_enabled( 'unknown' ) );
 
 		$filter = static fn( bool $enabled, string $module ): bool => 'commercial_profiles' === $module ? true : $enabled;
@@ -62,9 +60,9 @@ class PluginBootstrapTest extends WP_UnitTestCase {
 		remove_filter( 'crm_leads_capture_module_enabled', $filter, 10 );
 	}
 
-	public function test_plugin_exposes_service_interest_capture(): void {
-		$this->assertInstanceOf( CRM_Leads_Capture_Service_Interest_Capture::class, crm_leads_capture()->service_interest_capture() );
-		$this->assertTrue( function_exists( 'crm_leads_capture_render_service_interest_message' ) );
-		$this->assertTrue( function_exists( 'crm_leads_capture_service_interest_nonce_field' ) );
+	public function test_plugin_does_not_expose_obsolete_coo_contract(): void {
+		$this->assertFalse( class_exists( 'CRM_Leads_Capture_Service_Interest_Capture' ) );
+		$this->assertFalse( function_exists( 'crm_leads_capture_render_service_interest_message' ) );
+		$this->assertFalse( function_exists( 'crm_leads_capture_service_interest_nonce_field' ) );
 	}
 }
