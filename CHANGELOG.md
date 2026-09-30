@@ -4,6 +4,8 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+## 0.7.0 - release
+
 - Adiciona perfis de captura reutilizáveis com provider global e frontend
   genérico.
 - Migra materiais gratuitos, COO as a Service e convites para palestras para o
