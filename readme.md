@@ -7,6 +7,14 @@ Plugin WordPress para centralizar captura de leads e envio para CRMs.
 Este plugin processa submissões de captura, valida nonce/honeypot/dados do lead,
 monta um payload normalizado e delega o envio ao provider de CRM ativo.
 
+Formulários reutilizáveis são definidos por perfis com schema, validação,
+mapeamento do CRM e comportamento de sucesso. Cada instalação cria somente os
+perfis que utiliza em **Configurações > CRM Leads Capture > Perfis de captura**.
+O plugin inclui apenas o adaptador compatível de materiais gratuitos.
+
+Veja [administração de perfis](docs/capture-profile-administration.md) e o
+exemplo de [perfis comerciais administráveis](docs/commercial-capture-profiles.md).
+
 O domínio persistente de materiais gratuitos continua fora deste plugin. Quando
 o plugin `free-materials` estiver ativo, este plugin consome o CPT
 `material_gratuito`, mas não registra CPT, taxonomia, rewrites ou templates
@@ -22,7 +30,13 @@ Providers iniciais:
   `https://api.rd.services/platform/conversions`, com `event_type=CONVERSION`,
   `event_family=CDP` e payload de conversão.
 
-O provider ativo é escolhido em `Configurações > CRM Leads Capture`.
+O provider ativo é escolhido em `Configurações > CRM Leads Capture` e determina
+todos os envios da instalação. Materiais, páginas e formulários não podem trocar
+o provider global.
+
+Na mesma tela, a compatibilidade com materiais gratuitos pode ser desligada.
+Ela permanece ativa por padrão apenas para preservar instalações existentes;
+os perfis administráveis não dependem dela.
 
 ## Configuração
 
@@ -75,7 +89,7 @@ Campos de credencial nunca exibem o valor salvo no admin.
 
 Meta keys novas:
 
-- `_crm_leads_capture_provider`
+- `_crm_leads_capture_provider` (legado, preservado para diagnóstico e ignorado no roteamento)
 - `_crm_leads_capture_delivery_url`
 - `_crm_leads_capture_list_id`
 - `_crm_leads_capture_rd_station_conversion_identifier`
@@ -111,6 +125,13 @@ Compatibilidade temporária:
 - nonce/action antigo `brevo_leads_capture_free_material`
 - campo REST antigo `brevo_leads_capture_nonce`
 
+Formulários baseados em perfil usam:
+
+```text
+POST /wp-json/crm-leads-capture/v1/capture/{perfil}
+GET  /wp-json/crm-leads-capture/v1/capture/{perfil}/nonce
+```
+
 ## Segurança
 
 - Entradas são sanitizadas e nonces validados.
@@ -118,6 +139,13 @@ Compatibilidade temporária:
   resposta sensível do CRM no front-end.
 - Logs técnicos só são emitidos quando `WP_DEBUG` está ativo e passam por
   redação de chaves, tokens, e-mails, telefones, payloads e bodies.
+- Submissões são encaminhadas em memória e não criam posts, metadados ou uma
+  base local de leads.
+
+## Atualização de sites existentes
+
+O roteiro de pré-verificação, instalação, smoke tests e rollback está em
+[`docs/upgrade-checklist.md`](docs/upgrade-checklist.md).
 
 ## Testes
 

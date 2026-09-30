@@ -13,16 +13,47 @@ Configurações > CRM Leads Capture
 
 A tela é organizada em abas:
 
-- **General**: define o provider padrão usado por materiais sem override.
-  Também define uma URL de entrega padrão.
-- **Messages**: personaliza mensagens públicas de sucesso e erro.
+- **General**: define o único provider usado por todas as capturas da instalação.
+  Também define uma URL de entrega padrão e a compatibilidade temporária com
+  materiais gratuitos.
+- **Perfis de captura**: cria, edita e exclui schemas reutilizáveis de captura,
+  com seus campos, mensagens e destinos no provider global.
+- **Messages**: personaliza a mensagem de sucesso dos materiais gratuitos
+  legados e as mensagens públicas de erro. Cada perfil administrável possui sua
+  própria mensagem de sucesso.
 - **RD Station**: ativa o provider RD Station e configura suas credenciais e
   padrões de conversão.
 - **Brevo**: ativa o provider Brevo e configura suas credenciais e lista padrão.
 
-Mais de um provider pode estar ativo/configurado ao mesmo tempo. Cada material
-pode escolher um provider específico; quando não escolhe, usa o provider padrão
-da aba **General**.
+Mais de um provider pode permanecer configurado ao mesmo tempo, mas somente o
+provider global escolhido na aba **General** recebe envios. Materiais, páginas e
+perfis não podem sobrescrever essa escolha.
+
+## Compatibilidade
+
+O núcleo genérico, a administração de perfis e os providers ficam sempre
+disponíveis. Há somente um módulo opcional:
+
+- **Materiais gratuitos legados**: ativa actions, REST, metaboxes, avisos e
+  assets do contrato anterior de materiais.
+
+Ele começa ativo para preservar sites existentes e pode ser desligado na aba
+**General**. Perfis administráveis não dependem dessa configuração.
+
+Ambientes que controlam módulos por código podem usar o filtro:
+
+```php
+add_filter(
+	'crm_leads_capture_module_enabled',
+	static function ( bool $enabled, string $module ): bool {
+		return 'free_material_compatibility' === $module ? false : $enabled;
+	},
+	10,
+	2
+);
+```
+
+Identificador: `free_material_compatibility`.
 
 ## Estrutura da option
 
@@ -38,6 +69,9 @@ Campos principais:
 array(
     'active_provider' => 'brevo',
     'default_delivery_url' => 'https://example.com/obrigado',
+    'modules' => array(
+        'free_material_compatibility' => true,
+    ),
     'providers'       => array(
         'brevo'      => array(
             'enabled'         => true,
@@ -108,18 +142,20 @@ chave existente.
 
 ## Relação com materiais gratuitos
 
-Para cada material gratuito, o plugin tenta usar primeiro os metadados genéricos:
+Para cada material gratuito, o plugin usa o provider global e lê os metadados de
+destino relevantes para ele:
 
 ```text
-_crm_leads_capture_provider
 _crm_leads_capture_list_id
 _crm_leads_capture_delivery_url
 _crm_leads_capture_rd_station_conversion_identifier
 _crm_leads_capture_rd_station_tags
 ```
 
-Se o provider do material estiver vazio, o plugin usa o provider padrão global.
-Para Brevo, se a lista por material estiver vazia, usa a lista padrão global.
+O metadado legado `_crm_leads_capture_provider` é preservado para diagnóstico,
+mas não interfere mais no roteamento. Quando ele existe, o administrador recebe
+um aviso. Para Brevo, se a lista por material estiver vazia, usa a lista padrão
+global.
 
 Para URL de entrega, a ordem é:
 

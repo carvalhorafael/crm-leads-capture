@@ -18,7 +18,7 @@ class CRM_Leads_Capture_Elementor_Form_Mapper {
 			'brevo_api_key' => array(
 				'label'       => __( 'API Key', 'crm-leads-capture' ),
 				'placeholder' => 'xkeysib-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-				'description' => __( 'Opcional quando a API key global estiver configurada no plugin.', 'crm-leads-capture' ),
+				'description' => __( 'Campo legado preservado para compatibilidade. A credencial global do plugin é sempre usada.', 'crm-leads-capture' ),
 			),
 			'brevo_list_id' => array(
 				'label'       => __( 'List ID', 'crm-leads-capture' ),

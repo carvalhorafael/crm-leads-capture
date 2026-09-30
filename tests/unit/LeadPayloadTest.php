@@ -82,4 +82,58 @@ class LeadPayloadTest extends TestCase {
 
 		$this->assertSame( array( 456 ), $payload['listIds'] );
 	}
+
+	public function test_preserves_supported_custom_attribute_types_and_omits_empty_values(): void {
+		$builder = new CRM_Leads_Capture_Lead_Payload();
+		$result  = $builder->build_contact(
+			array( 'email' => 'lead@example.com' ),
+			array(
+				'attributes' => array(
+					'COMPANY'    => 'Acme',
+					'TEAM_SIZE'  => 12,
+					'SCORE'      => 9.5,
+					'CONSENT'    => false,
+					'INTERESTS'  => array( 'COO', 'Palestras' ),
+					'EMPTY_TEXT' => '',
+					'EMPTY_LIST' => array(),
+				),
+			)
+		);
+
+		$this->assertTrue( $result->is_successful() );
+		$this->assertSame( 'Acme', $result->data()['payload']['attributes']['COMPANY'] );
+		$this->assertSame( 12, $result->data()['payload']['attributes']['TEAM_SIZE'] );
+		$this->assertSame( 9.5, $result->data()['payload']['attributes']['SCORE'] );
+		$this->assertFalse( $result->data()['payload']['attributes']['CONSENT'] );
+		$this->assertSame( array( 'COO', 'Palestras' ), $result->data()['payload']['attributes']['INTERESTS'] );
+		$this->assertArrayNotHasKey( 'EMPTY_TEXT', $result->data()['payload']['attributes'] );
+		$this->assertArrayNotHasKey( 'EMPTY_LIST', $result->data()['payload']['attributes'] );
+	}
+
+	/**
+	 * @dataProvider invalid_attributes_provider
+	 *
+	 * @param mixed $value Attribute value.
+	 */
+	public function test_rejects_invalid_custom_attribute_before_http_payload( string $key, $value ): void {
+		$result = ( new CRM_Leads_Capture_Lead_Payload() )->build_contact(
+			array( 'email' => 'lead@example.com' ),
+			array( 'attributes' => array( $key => $value ) )
+		);
+
+		$this->assertFalse( $result->is_successful() );
+		$this->assertSame( 'invalid_payload', $result->data()['code'] );
+	}
+
+	/**
+	 * @return array<string, array{string, mixed}>
+	 */
+	public function invalid_attributes_provider(): array {
+		return array(
+			'lowercase name' => array( 'company', 'Acme' ),
+			'invalid name'   => array( 'COMPANY-NAME', 'Acme' ),
+			'object value'   => array( 'COMPANY', (object) array( 'name' => 'Acme' ) ),
+			'mixed list'     => array( 'INTERESTS', array( 'COO', 2 ) ),
+		);
+	}
 }

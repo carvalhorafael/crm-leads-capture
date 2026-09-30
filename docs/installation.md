@@ -3,16 +3,18 @@
 ## Requisitos
 
 - WordPress moderno compatível com PHP 8.1 ou superior.
-- Brevo API key válida.
+- Credencial válida para Brevo ou RD Station.
 - Para formulários Elementor: Elementor Pro ativo.
 
 ## Instalação
 
 1. Instale o plugin no diretório `wp-content/plugins/crm-leads-capture`.
 2. Ative o plugin no admin do WordPress.
-3. Configure a API key Brevo em `Configurações > CRM Leads Capture` ou por constante.
-4. Configure uma lista padrão Brevo, se a maioria das capturas usar a mesma lista.
-5. Para materiais gratuitos, configure os metadados no próprio material.
+3. Escolha o provider global em `Configurações > CRM Leads Capture > General`.
+4. Configure a credencial na aba Brevo ou RD Station, ou por constante.
+5. Configure a lista padrão Brevo ou a conversão padrão RD Station quando os
+   perfis/materiais não tiverem destino próprio.
+6. Para materiais gratuitos, configure os metadados no próprio material.
 
 ## Configuração por constante
 
@@ -21,6 +23,7 @@ Preferível para produção:
 ```php
 define( 'CRM_LEADS_CAPTURE_BREVO_API_KEY', 'xkeysib-...' );
 define( 'CRM_LEADS_CAPTURE_BREVO_DEFAULT_LIST_ID', 123 );
+define( 'CRM_LEADS_CAPTURE_RD_STATION_API_KEY', '...' );
 ```
 
 Não versione chaves reais em arquivos do projeto.
@@ -29,8 +32,9 @@ Não versione chaves reais em arquivos do projeto.
 
 Use `Configurações > CRM Leads Capture` para:
 
-- salvar API key no banco do WordPress;
-- definir lista padrão Brevo;
+- escolher o único provider usado pela instalação;
+- salvar credenciais no banco do WordPress;
+- definir lista Brevo ou conversão/tags RD Station padrão;
 - conferir o status da configuração.
 
 O campo de API key não renderiza o valor salvo. Deixar o campo em branco mantém a chave existente.
@@ -65,6 +69,10 @@ composer package
 
 O pacote e gerado em `dist/` com uma pasta raiz `crm-leads-capture/`.
 Antes de usar em producao, siga `docs/release-preparation.md`.
+
+Ao substituir uma versão existente, siga também
+`docs/upgrade-checklist.md`. Options e metadados legados não devem ser apagados
+antes da validação em staging.
 
 ## Atualizacoes pelo WordPress
 

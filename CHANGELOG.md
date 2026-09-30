@@ -4,6 +4,29 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+## 0.7.0 - release
+
+- Adiciona perfis de captura reutilizáveis com provider global e frontend
+  genérico.
+- Migra materiais gratuitos, COO as a Service e convites para palestras para o
+  pipeline comum, preservando apenas os contratos legados necessários.
+- Remove o armazenamento local de interesses comerciais e adiciona mapeamento
+  completo de campos customizados para Brevo e RD Station.
+- Adiciona administração de perfis, associação por página, diagnóstico de
+  overrides antigos, matriz de regressão e checklist seguro de atualização.
+- Torna a compatibilidade de materiais um módulo opcional, evitando hooks,
+  assets e avisos específicos em sites que usam apenas o núcleo genérico.
+- Remove o contrato de COO que ainda não havia sido usado; o formulário nasce
+  diretamente no perfil genérico `coo-as-a-service`.
+- Remove os perfis comerciais embutidos e o respectivo controle global. COO e
+  palestras passam a ser perfis comuns, persistidos e editáveis por instalação.
+- Permite adicionar e remover campos no editor de perfis e configurar valores
+  válidos para campos `select`.
+- Integra a administração de perfis como aba da página principal do plugin, sem
+  criar um segundo submenu em Configurações.
+- Adia o registro traduzido da aba de perfis até `init`, evitando o aviso de
+  carregamento prematuro de traduções no WordPress 6.7 ou superior.
+
 ## 0.6.1 - captura em site privado
 
 - Corrige a captura em sites que exigem login, onde as duas chamadas REST eram

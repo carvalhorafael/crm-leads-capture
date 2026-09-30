@@ -14,11 +14,28 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->settings = new CRM_Leads_Capture_Settings();
 		delete_option( CRM_Leads_Capture_Settings::OPTION_SETTINGS );
 		delete_option( CRM_Leads_Capture_Settings::OPTION_DEFAULT_LIST_ID );
+		delete_option( CRM_Leads_Capture_Settings::LEGACY_OPTION_SETTINGS );
+		delete_option( CRM_Leads_Capture_Settings::LEGACY_OPTION_DEFAULT_LIST_ID );
+	}
+
+	public function tear_down(): void {
+		$_GET = array();
+		parent::tear_down();
 	}
 
 	public function test_plugin_registers_settings_admin_hooks(): void {
 		$this->assertSame( 10, has_action( 'admin_menu', array( crm_leads_capture()->settings(), 'register_page' ) ) );
 		$this->assertSame( 10, has_action( 'admin_init', array( crm_leads_capture()->settings(), 'register_settings' ) ) );
+	}
+
+	public function test_general_settings_expose_only_material_compatibility(): void {
+		global $wp_settings_fields;
+		$this->settings->register_settings();
+		$fields = $wp_settings_fields['crm-leads-capture-general']['crm_leads_capture_modules_section'];
+
+		$this->assertArrayHasKey( 'crm_leads_capture_free_material_compatibility', $fields );
+		$this->assertArrayNotHasKey( 'crm_leads_capture_commercial_profiles', $fields );
+		$this->assertCount( 1, $fields );
 	}
 
 	public function test_reads_api_key_and_default_list_id_from_grouped_option(): void {
@@ -37,6 +54,93 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertSame( 'stored-api-key', $this->settings->api_key() );
 		$this->assertSame( 789, $this->settings->default_list_id() );
 		$this->assertTrue( $this->settings->has_api_key() );
+	}
+
+	public function test_active_provider_defaults_to_brevo_when_not_explicitly_configured(): void {
+		$this->assertSame( 'brevo', $this->settings->active_provider() );
+		$this->assertTrue( $this->settings->free_material_compatibility_enabled() );
+	}
+
+	public function test_optional_modules_can_be_disabled_without_changing_provider_configuration(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'rd_station',
+				'providers'       => array( 'rd_station' => array( 'api_key' => 'rd-key', 'enabled' => true ) ),
+			)
+		);
+
+		$sanitized = $this->settings->sanitize_options(
+			array(
+				'active_provider' => 'rd_station',
+				'modules'         => array(),
+			)
+		);
+
+		$this->assertFalse( $sanitized['modules']['free_material_compatibility'] );
+		$this->assertSame( 'rd-key', $sanitized['providers']['rd_station']['api_key'] );
+
+		update_option( CRM_Leads_Capture_Settings::OPTION_SETTINGS, $sanitized );
+		$this->assertFalse( $this->settings->free_material_compatibility_enabled() );
+	}
+
+	public function test_saving_another_tab_preserves_optional_module_state(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'modules' => array(
+					'free_material_compatibility' => false,
+				),
+			)
+		);
+
+		$sanitized = $this->settings->sanitize_options( array( 'success_message' => 'Tudo certo.' ) );
+
+		$this->assertFalse( $sanitized['modules']['free_material_compatibility'] );
+	}
+
+	public function test_upgrade_keeps_legacy_brevo_options_readable_without_migration(): void {
+		update_option(
+			CRM_Leads_Capture_Settings::LEGACY_OPTION_SETTINGS,
+			array(
+				'api_key'         => 'legacy-api-key',
+				'default_list_id' => '654',
+			)
+		);
+
+		$this->assertSame( 'legacy-api-key', $this->settings->brevo_api_key() );
+		$this->assertSame( 654, $this->settings->brevo_default_list_id() );
+		$this->assertSame(
+			array( 'api_key' => 'legacy-api-key', 'default_list_id' => '654' ),
+			get_option( CRM_Leads_Capture_Settings::LEGACY_OPTION_SETTINGS )
+		);
+	}
+
+	public function test_validates_active_provider_availability_and_credentials(): void {
+		$this->assertSame( 'provider_not_configured', $this->settings->provider_configuration_error() );
+
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'brevo',
+				'providers'       => array(
+					'brevo' => array( 'enabled' => false, 'api_key' => 'brevo-key' ),
+				),
+			)
+		);
+		$this->assertSame( 'provider_disabled', $this->settings->provider_configuration_error() );
+
+		update_option(
+			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
+			array(
+				'active_provider' => 'rd_station',
+				'providers'       => array(
+					'rd_station' => array( 'enabled' => true, 'api_key' => 'rd-key' ),
+				),
+			)
+		);
+		$this->assertSame( '', $this->settings->provider_configuration_error() );
+		$this->assertTrue( $this->settings->provider_configured( 'rd_station' ) );
 	}
 
 	public function test_default_list_id_falls_back_to_legacy_option(): void {
@@ -222,21 +326,51 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'secret-api-key', $output );
 	}
 
+	public function test_global_provider_copy_does_not_offer_content_overrides(): void {
+		ob_start();
+		$this->settings->render_provider_section();
+		$this->settings->render_active_provider_field();
+		$output = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'único provider', $output );
+		$this->assertStringContainsString( 'usam sempre esta configuração global', $output );
+		$this->assertStringNotContainsString( 'sobrescrever', $output );
+	}
+
 	public function test_render_tabs_marks_current_tab_active(): void {
 		$_GET['tab'] = 'messages';
 
 		ob_start();
-		$this->settings->render_tabs();
+		crm_leads_capture()->settings()->render_tabs();
 		$output = (string) ob_get_clean();
 
 		$this->assertStringContainsString( 'nav-tab-wrapper', $output );
 		$this->assertStringContainsString( 'General', $output );
+		$this->assertStringContainsString( 'Perfis de captura', $output );
 		$this->assertStringContainsString( 'Messages', $output );
 		$this->assertStringContainsString( 'RD Station', $output );
 		$this->assertStringContainsString( 'Brevo', $output );
 		$this->assertStringContainsString( 'tab=messages', $output );
 		$this->assertStringContainsString( 'nav-tab-active', $output );
 
-		unset( $_GET['tab'] );
+	}
+
+	public function test_profiles_render_inside_main_plugin_settings_page(): void {
+		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+		$_GET = array(
+			'page' => CRM_Leads_Capture_Settings::SETTINGS_PAGE,
+			'tab'  => CRM_Leads_Capture_Profile_Admin::TAB_SLUG,
+		);
+
+		ob_start();
+		crm_leads_capture()->settings()->render_page();
+		$output = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'nav-tab-active', $output );
+		$this->assertStringContainsString( 'Perfis de captura', $output );
+		$this->assertStringContainsString( 'class="crm-leads-capture-profiles-tab"', $output );
+		$this->assertSame( 1, substr_count( $output, 'class="wrap"' ) );
+		$this->assertStringNotContainsString( 'name="option_page" value="crm_leads_capture_settings"', $output );
 	}
 }

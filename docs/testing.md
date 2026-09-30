@@ -77,3 +77,17 @@ Toda feature nova ou correção de bug deve incluir testes compatíveis com o ri
 - update checker via GitHub Releases preservando o fluxo nativo de updates do
   WordPress;
 - garantia de que chaves de API e dados sensíveis não aparecem em logs ou mensagens para usuário final.
+
+## Matriz de regressão da arquitetura de perfis
+
+`CaptureProviderMatrixTest` percorre o processador e os providers reais com
+transporte HTTP simulado. A suíte cobre explicitamente:
+
+| Provider global | Material | COO | Palestra |
+| --- | --- | --- | --- |
+| Brevo | sim | sim | sim |
+| RD Station | sim | sim | sim |
+
+As suítes complementares verificam actions/nonces/metadados legados, campos
+válidos e inválidos, provider desabilitado ou ausente, erros HTTP, redação dos
+logs e ausência de posts/metadados criados por submissões.

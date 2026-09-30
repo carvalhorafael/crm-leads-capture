@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CRM Leads Capture
  * Description: Centraliza capturas de leads WordPress e envio para CRMs.
- * Version: 0.6.1
+ * Version: 0.7.0
  * Requires at least: 6.4
  * Requires PHP: 8.1
  * Author: Rafael Carvalho
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CRM_LEADS_CAPTURE_VERSION', '0.6.1' );
+define( 'CRM_LEADS_CAPTURE_VERSION', '0.7.0' );
 define( 'CRM_LEADS_CAPTURE_FILE', __FILE__ );
 define( 'CRM_LEADS_CAPTURE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CRM_LEADS_CAPTURE_BASENAME', plugin_basename( __FILE__ ) );
@@ -31,6 +31,15 @@ require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-settings.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-lead-payload.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-provider-interface.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-provider-registry.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-recording-provider.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-field.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-registry.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-repository.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-submission.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-processor.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-frontend.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-admin.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-brevo-client.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-brevo-provider.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-rd-station-client.php';
@@ -59,6 +68,20 @@ function crm_leads_capture_get_free_material_error_message(): string {
  */
 function crm_leads_capture_render_free_material_error_message(): void {
 	crm_leads_capture()->free_material_capture()->render_error_message();
+}
+
+/**
+ * Renders the generic hidden fields for a capture profile form.
+ */
+function crm_leads_capture_form_fields( string $profile_slug ): void {
+	echo crm_leads_capture()->frontend()->form_fields( $profile_slug );
+}
+
+/**
+ * Renders the generic accessible feedback container.
+ */
+function crm_leads_capture_render_message( string $profile_slug = '' ): void {
+	echo crm_leads_capture()->frontend()->message_markup( $profile_slug );
 }
 
 if ( ! function_exists( 'brevo_leads_capture' ) ) {

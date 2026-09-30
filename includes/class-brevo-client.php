@@ -39,7 +39,11 @@ class CRM_Leads_Capture_Brevo_Client {
 		}
 
 		if ( empty( $lead['email'] ) || ! is_string( $lead['email'] ) ) {
-			return CRM_Leads_Capture_Result::failure( 0, 'Brevo contact payload requires an email.' );
+			return $this->invalid_payload( 'Brevo contact payload requires an email.' );
+		}
+
+		if ( ! $this->is_valid_payload( $lead ) ) {
+			return $this->invalid_payload( 'Brevo contact payload is invalid.' );
 		}
 
 		$response = $this->post( $lead );
@@ -165,33 +169,69 @@ class CRM_Leads_Capture_Brevo_Client {
 			return $summary;
 		}
 
-		foreach ( array( 'code', 'message', 'error', 'type' ) as $key ) {
+		foreach ( array( 'code', 'type' ) as $key ) {
 			if ( isset( $decoded[ $key ] ) && is_scalar( $decoded[ $key ] ) ) {
 				$summary[ $key ] = (string) $decoded[ $key ];
 			}
 		}
 
 		if ( isset( $decoded['details'] ) && is_array( $decoded['details'] ) ) {
-			$summary['details'] = $this->scalar_array( $decoded['details'] );
+			$summary['detail_keys'] = array_values( array_map( 'strval', array_keys( $decoded['details'] ) ) );
 		}
 
 		return $summary;
 	}
 
 	/**
-	 * @param array<string, mixed> $values
-	 *
-	 * @return array<string, mixed>
+	 * @param array<string, mixed> $payload
 	 */
-	private function scalar_array( array $values ): array {
-		$scalars = array();
-
-		foreach ( $values as $key => $value ) {
-			if ( is_scalar( $value ) || null === $value ) {
-				$scalars[ (string) $key ] = $value;
+	private function is_valid_payload( array $payload ): bool {
+		if ( isset( $payload['listIds'] ) ) {
+			if ( ! is_array( $payload['listIds'] ) || array() === $payload['listIds'] ) {
+				return false;
+			}
+			foreach ( $payload['listIds'] as $list_id ) {
+				if ( ! is_int( $list_id ) || 0 >= $list_id ) {
+					return false;
+				}
 			}
 		}
 
-		return $scalars;
+		if ( isset( $payload['attributes'] ) ) {
+			if ( ! is_array( $payload['attributes'] ) ) {
+				return false;
+			}
+			foreach ( $payload['attributes'] as $key => $value ) {
+				if ( ! is_string( $key ) || 1 !== preg_match( '/^[A-Z][A-Z0-9_]*$/', $key ) || ! $this->is_valid_attribute_value( $value ) ) {
+					return false;
+				}
+			}
+		}
+
+		return ! isset( $payload['updateEnabled'] ) || is_bool( $payload['updateEnabled'] );
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	private function is_valid_attribute_value( $value ): bool {
+		if ( is_string( $value ) || is_int( $value ) || is_float( $value ) || is_bool( $value ) ) {
+			return true;
+		}
+		if ( ! is_array( $value ) ) {
+			return false;
+		}
+
+		foreach ( $value as $item ) {
+			if ( ! is_string( $item ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private function invalid_payload( string $message ): CRM_Leads_Capture_Result {
+		return CRM_Leads_Capture_Result::failure( 0, $message, array( 'code' => 'invalid_payload' ) );
 	}
 }

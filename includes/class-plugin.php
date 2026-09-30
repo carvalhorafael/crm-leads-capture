@@ -18,6 +18,16 @@ class CRM_Leads_Capture_Plugin {
 
 	private CRM_Leads_Capture_Provider_Registry $providers;
 
+	private CRM_Leads_Capture_Profile_Registry $capture_profiles;
+
+	private CRM_Leads_Capture_Profile_Repository $profile_repository;
+
+	private CRM_Leads_Capture_Profile_Admin $profile_admin;
+
+	private CRM_Leads_Capture_Processor $capture_processor;
+
+	private CRM_Leads_Capture_Frontend $frontend;
+
 	private CRM_Leads_Capture_Free_Material_Capture $free_material_capture;
 
 	private CRM_Leads_Capture_GitHub_Updater $github_updater;
@@ -30,6 +40,18 @@ class CRM_Leads_Capture_Plugin {
 		$this->providers = new CRM_Leads_Capture_Provider_Registry();
 		$this->providers->register( new CRM_Leads_Capture_Brevo_Provider( $this->settings ) );
 		$this->providers->register( new CRM_Leads_Capture_RD_Station_Provider( $this->settings ) );
+		$this->capture_profiles = new CRM_Leads_Capture_Profile_Registry();
+		$this->profile_repository = new CRM_Leads_Capture_Profile_Repository( $this->settings );
+		$this->capture_processor = new CRM_Leads_Capture_Processor(
+			$this->capture_profiles,
+			$this->providers,
+			fn(): string => $this->settings->active_provider(),
+			static fn( string $nonce, string $action ): bool => false !== wp_verify_nonce( $nonce, $action ),
+			$this->logger,
+			fn( string $provider ): string => $this->settings->provider_configuration_error( $provider )
+		);
+		$this->frontend = new CRM_Leads_Capture_Frontend( $this->capture_profiles, $this->capture_processor, $this->settings, $this->profile_repository );
+		$this->profile_admin = new CRM_Leads_Capture_Profile_Admin( $this->profile_repository, $this->settings );
 
 		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
 		$this->github_updater        = new CRM_Leads_Capture_GitHub_Updater( CRM_LEADS_CAPTURE_FILE, CRM_LEADS_CAPTURE_VERSION );
@@ -50,11 +72,22 @@ class CRM_Leads_Capture_Plugin {
 
 		$this->booted = true;
 
-		add_action( 'init', array( $this, 'load_textdomain' ) );
+		add_action( 'init', array( $this, 'load_textdomain' ), 0 );
+		add_action( 'init', array( $this, 'register_settings_tabs' ), 1 );
+		add_action( 'init', array( $this, 'register_capture_profiles' ), 11 );
+		add_action( 'init', array( $this, 'register_optional_capture_modules' ), 12 );
 		$this->settings->register_hooks();
-		$this->free_material_capture->register_hooks();
+		$this->profile_repository->register_hooks();
+		$this->profile_admin->register_hooks();
+		$this->frontend->register_hooks();
 		$this->github_updater->register_hooks();
 		add_action( 'elementor_pro/forms/actions/register', array( $this, 'register_elementor_form_action' ) );
+	}
+
+	public function register_optional_capture_modules(): void {
+		if ( $this->module_enabled( 'free_material_compatibility' ) ) {
+			$this->free_material_capture->register_hooks();
+		}
 	}
 
 	public function load_textdomain(): void {
@@ -63,6 +96,33 @@ class CRM_Leads_Capture_Plugin {
 			false,
 			dirname( CRM_LEADS_CAPTURE_BASENAME ) . '/languages'
 		);
+	}
+
+	public function register_settings_tabs(): void {
+		$this->settings->register_tab(
+			CRM_Leads_Capture_Profile_Admin::TAB_SLUG,
+			__( 'Perfis de captura', 'crm-leads-capture' ),
+			array( $this->profile_admin, 'render_tab' )
+		);
+	}
+
+	public function register_capture_profiles(): void {
+		$this->profile_repository->register_profiles( $this->capture_profiles );
+	}
+
+	public function module_enabled( string $module ): bool {
+		$defaults = array(
+			'free_material_compatibility' => $this->settings->free_material_compatibility_enabled(),
+		);
+		$enabled = $defaults[ $module ] ?? false;
+
+		/**
+		 * Filters whether an optional capture module is active for this request.
+		 *
+		 * @param bool   $enabled Whether the module is enabled in settings.
+		 * @param string $module  Stable module identifier.
+		 */
+		return (bool) apply_filters( 'crm_leads_capture_module_enabled', $enabled, $module );
 	}
 
 	public function settings(): CRM_Leads_Capture_Settings {
@@ -79,6 +139,22 @@ class CRM_Leads_Capture_Plugin {
 
 	public function providers(): CRM_Leads_Capture_Provider_Registry {
 		return $this->providers;
+	}
+
+	public function capture_profiles(): CRM_Leads_Capture_Profile_Registry {
+		return $this->capture_profiles;
+	}
+
+	public function capture_processor(): CRM_Leads_Capture_Processor {
+		return $this->capture_processor;
+	}
+
+	public function profile_repository(): CRM_Leads_Capture_Profile_Repository {
+		return $this->profile_repository;
+	}
+
+	public function frontend(): CRM_Leads_Capture_Frontend {
+		return $this->frontend;
 	}
 
 	public function github_updater(): CRM_Leads_Capture_GitHub_Updater {
@@ -100,7 +176,9 @@ class CRM_Leads_Capture_Plugin {
 				new CRM_Leads_Capture_Elementor_Form_Action(
 					$this->settings,
 					new CRM_Leads_Capture_Elementor_Form_Mapper(),
-					new CRM_Leads_Capture_Lead_Payload()
+					new CRM_Leads_Capture_Lead_Payload(),
+					$this->logger,
+					$this->providers
 				)
 			);
 		}
