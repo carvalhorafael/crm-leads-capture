@@ -3,11 +3,10 @@
 Este documento inicia a fase de release do `crm-leads-capture` para instalacao
 em producao.
 
-Status atual: pre-release `0.1.0`. O plugin ja possui core Brevo, captura de
-materiais gratuitos, configuracoes globais, adaptador Elementor, update checker
-via GitHub Releases, workflow de release e suites de testes. Ainda falta
-validacao operacional dos formularios reais antes de marcar uma versao como
-pronta para producao.
+O plugin possui providers Brevo e RD Station, perfis reutilizáveis, capturas de
+materiais e formulários comerciais, adaptador Elementor, update checker via
+GitHub Releases, workflow de release e suítes de testes. A validação operacional
+dos formulários reais continua obrigatória antes de publicar uma versão.
 
 ## Criterios para uma release instalavel
 
@@ -25,6 +24,7 @@ concluidos:
 - As strings visiveis novas usam text domain `crm-leads-capture`.
 - O pacote nao contem `.env`, `.npmrc`, logs, dumps, caches, `vendor/`, suites
   de teste ou instalacoes WordPress locais.
+- A migração/atualização seguiu `docs/upgrade-checklist.md`.
 - A migracao Elementor real seguiu `docs/elementor-real-forms-migration.md`.
 - O rollback para Elementor foi testado ou documentado como excecao.
 
@@ -114,11 +114,13 @@ Em um WordPress de staging:
 2. Ative `CRM Leads Capture`.
 3. Abra `Configurações > CRM Leads Capture`.
 4. Configure API key e lista padrao com dados de teste.
-5. Execute um envio de material gratuito, se o tema estiver integrado.
-6. Execute um envio Elementor piloto.
-7. Confirme contato, lista e atributos no Brevo.
+5. Execute a matriz de smoke tests de `docs/upgrade-checklist.md` para o
+   provider global ativo.
+6. Execute um envio Elementor piloto, quando aplicável.
+7. Confirme contato, destino e campos customizados no CRM ativo.
 8. Confirme que falhas exibem mensagens genericas ao usuario.
 9. Confirme logs sem API key, email, telefone ou payload sensivel.
+10. Confirme que nenhuma submissão criou posts ou metadados de lead.
 
 ## Checklist de versao
 

@@ -85,11 +85,12 @@ Novos nomes preferenciais:
 
 Novos metadados:
 
-- `_crm_leads_capture_provider`
+- `_crm_leads_capture_provider` (legado, somente para diagnóstico)
 - `_crm_leads_capture_delivery_url`
 - `_crm_leads_capture_list_id`
 - `_crm_leads_capture_rd_station_conversion_identifier`
 - `_crm_leads_capture_rd_station_tags`
 
-Quando `_crm_leads_capture_provider` não estiver definido, o material usa o
-provider ativo global.
+Todos os materiais usam o provider ativo global. Valores já existentes em
+`_crm_leads_capture_provider` são preservados e reportados ao administrador,
+mas não alteram mais o roteamento.

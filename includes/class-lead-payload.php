@@ -45,16 +45,21 @@ class CRM_Leads_Capture_Lead_Payload {
 
 		if ( isset( $context['attributes'] ) && is_array( $context['attributes'] ) ) {
 			foreach ( $context['attributes'] as $attribute_key => $attribute_value ) {
-				$attribute_key = $this->normalize_attribute_key( $attribute_key );
-				if ( '' !== $attribute_key ) {
-					$attributes[ $attribute_key ] = $this->clean_string( $attribute_value );
+				if ( ! $this->is_valid_attribute_key( $attribute_key ) || ! $this->is_valid_attribute_value( $attribute_value ) ) {
+					return CRM_Leads_Capture_Result::failure(
+						0,
+						'Brevo attribute configuration is invalid.',
+						array( 'code' => 'invalid_payload' )
+					);
 				}
+
+				$attributes[ (string) $attribute_key ] = $this->clean_attribute_value( $attribute_value );
 			}
 		}
 
 		$attributes = array_filter(
 			$attributes,
-			static fn( $value ): bool => '' !== $value
+			fn( $value ): bool => ! $this->is_empty_attribute_value( $value )
 		);
 
 		$payload = array(
@@ -193,14 +198,52 @@ class CRM_Leads_Capture_Lead_Payload {
 	/**
 	 * @param mixed $key
 	 */
-	private function normalize_attribute_key( $key ): string {
-		if ( is_array( $key ) || is_object( $key ) ) {
-			return '';
+	private function is_valid_attribute_key( $key ): bool {
+		return is_string( $key ) && 1 === preg_match( '/^[A-Z][A-Z0-9_]*$/', $key );
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	private function is_valid_attribute_value( $value ): bool {
+		if ( is_string( $value ) || is_int( $value ) || is_float( $value ) || is_bool( $value ) ) {
+			return true;
 		}
 
-		$key = strtoupper( (string) $key );
-		$key = preg_replace( '/[^A-Z0-9_]/', '', $key );
+		if ( ! is_array( $value ) ) {
+			return false;
+		}
 
-		return trim( (string) $key, '_' );
+		foreach ( $value as $item ) {
+			if ( ! is_string( $item ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * @param mixed $value
+	 * @return string|int|float|bool|array<int, string>
+	 */
+	private function clean_attribute_value( $value ) {
+		if ( is_array( $value ) ) {
+			return array_values(
+				array_filter(
+					array_map( array( $this, 'clean_string' ), $value ),
+					static fn( string $item ): bool => '' !== $item
+				)
+			);
+		}
+
+		return is_string( $value ) ? $this->clean_string( $value ) : $value;
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	private function is_empty_attribute_value( $value ): bool {
+		return '' === $value || null === $value || array() === $value;
 	}
 }

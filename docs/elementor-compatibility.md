@@ -46,11 +46,15 @@ Os nomes dos controles antigos foram mantidos para preservar formulários existe
 - `brevo_utm_name_field`
 - `brevo_utm_term_field`
 
-## Fallbacks globais
+## Provider e fallbacks globais
 
-Se a API key global estiver configurada no plugin, ela tem prioridade sobre `brevo_api_key` do formulário.
+O nome e os controles `brevo_*` permanecem para compatibilidade dos formulários,
+mas a action envia pelo provider global da instalação. O controle legado
+`brevo_api_key` não sobrescreve mais as credenciais globais.
 
-Se `brevo_list_id` estiver vazio, o plugin usa a lista padrão global.
+Quando Brevo é o provider global, `brevo_list_id` continua definindo a lista do
+formulário; se estiver vazio, o plugin usa a lista padrão global. Quando RD
+Station é o provider global, configurações Brevo são ignoradas.
 
 ## UTMs
 
@@ -71,4 +75,5 @@ Para compatibilidade com o plugin antigo, valores de WhatsApp vindos do adaptado
 
 ## HTTP
 
-O adaptador Elementor não chama `wp_remote_post` diretamente. Ele monta o payload e usa `CRM_Leads_Capture_Brevo_Client`, mantendo a integração HTTP centralizada.
+O adaptador Elementor não chama `wp_remote_post` diretamente. Ele monta a
+entrada normalizada e delega o envio ao provider global registrado.

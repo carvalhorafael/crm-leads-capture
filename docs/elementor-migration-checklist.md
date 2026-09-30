@@ -9,8 +9,8 @@ rapido de compatibilidade por formulario.
 ## Antes da troca
 
 - Confirme que `crm-leads-capture` está ativo.
-- Configure `CRM_LEADS_CAPTURE_BREVO_API_KEY` ou salve a API key no admin do plugin.
-- Configure lista padrão global, se aplicável.
+- Escolha e habilite o provider global no admin do plugin.
+- Configure a credencial do provider global e, para Brevo, a lista padrão se aplicável.
 - Escolha um formulário Elementor real para teste.
 
 ## Compatibilidade preservada
@@ -42,14 +42,14 @@ Para cada formulário crítico:
    - `brevo_whatsapp_field`
    - UTMs e campos customizados.
 4. Envie um lead de teste.
-5. Confirme no Brevo que o contato foi criado ou atualizado.
-6. Confirme que a lista correta recebeu o contato.
+5. Confirme no provider global que o contato foi criado ou atualizado.
+6. Para Brevo, confirme que a lista correta recebeu o contato.
 7. Confirme que os atributos customizados foram preenchidos.
 
 ## Diferenças intencionais
 
-- A chamada HTTP agora fica em `CRM_Leads_Capture_Brevo_Client`.
-- A API key global do plugin tem prioridade sobre a API key configurada no formulário.
+- A chamada HTTP é delegada ao provider global registrado.
+- A API key configurada no formulário é preservada como dado legado, mas não sobrescreve a credencial global.
 - Se `brevo_list_id` estiver vazio, o plugin usa a lista padrão global.
 - Mensagens de erro ao usuário são genéricas para não expor resposta bruta da Brevo.
 - Logs técnicos só aparecem com `WP_DEBUG` ativo e passam por redaction.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CRM Leads Capture
  * Description: Centraliza capturas de leads WordPress e envio para CRMs.
- * Version: 0.6.1
+ * Version: 0.7.0
  * Requires at least: 6.4
  * Requires PHP: 8.1
  * Author: Rafael Carvalho
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CRM_LEADS_CAPTURE_VERSION', '0.6.1' );
+define( 'CRM_LEADS_CAPTURE_VERSION', '0.7.0' );
 define( 'CRM_LEADS_CAPTURE_FILE', __FILE__ );
 define( 'CRM_LEADS_CAPTURE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CRM_LEADS_CAPTURE_BASENAME', plugin_basename( __FILE__ ) );
@@ -31,13 +31,21 @@ require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-settings.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-lead-payload.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-provider-interface.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-provider-registry.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-recording-provider.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-field.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-registry.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-repository.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-submission.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-processor.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-frontend.php';
+require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-admin.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-brevo-client.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-brevo-provider.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-rd-station-client.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-rd-station-provider.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-github-updater.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-free-material-capture.php';
-require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-service-interest-capture.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/integrations/class-elementor-form-mapper.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-plugin.php';
 
@@ -63,17 +71,17 @@ function crm_leads_capture_render_free_material_error_message(): void {
 }
 
 /**
- * Renders the current public message for the service interest form.
+ * Renders the generic hidden fields for a capture profile form.
  */
-function crm_leads_capture_render_service_interest_message(): void {
-	crm_leads_capture()->service_interest_capture()->render_message();
+function crm_leads_capture_form_fields( string $profile_slug ): void {
+	echo crm_leads_capture()->frontend()->form_fields( $profile_slug );
 }
 
 /**
- * Renders the nonce expected by the service interest form.
+ * Renders the generic accessible feedback container.
  */
-function crm_leads_capture_service_interest_nonce_field(): void {
-	wp_nonce_field( CRM_Leads_Capture_Service_Interest_Capture::NONCE_ACTION );
+function crm_leads_capture_render_message( string $profile_slug = '' ): void {
+	echo crm_leads_capture()->frontend()->message_markup( $profile_slug );
 }
 
 if ( ! function_exists( 'brevo_leads_capture' ) ) {

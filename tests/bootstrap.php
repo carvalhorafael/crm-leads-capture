@@ -34,3 +34,5 @@ function crm_leads_capture_manually_load_plugin(): void {
 tests_add_filter( 'muplugins_loaded', 'crm_leads_capture_manually_load_plugin' );
 
 require $_tests_dir . '/includes/bootstrap.php';
+
+require_once __DIR__ . '/helpers/commercial-profile-fixtures.php';
