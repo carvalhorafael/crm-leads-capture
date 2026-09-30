@@ -52,7 +52,6 @@ class CRM_Leads_Capture_Plugin {
 		);
 		$this->frontend = new CRM_Leads_Capture_Frontend( $this->capture_profiles, $this->capture_processor, $this->settings, $this->profile_repository );
 		$this->profile_admin = new CRM_Leads_Capture_Profile_Admin( $this->profile_repository, $this->settings );
-		$this->settings->register_tab( CRM_Leads_Capture_Profile_Admin::TAB_SLUG, __( 'Perfis de captura', 'crm-leads-capture' ), array( $this->profile_admin, 'render_tab' ) );
 
 		$this->free_material_capture = new CRM_Leads_Capture_Free_Material_Capture( $this->settings, $this->providers, null, $this->logger );
 		$this->github_updater        = new CRM_Leads_Capture_GitHub_Updater( CRM_LEADS_CAPTURE_FILE, CRM_LEADS_CAPTURE_VERSION );
@@ -73,7 +72,8 @@ class CRM_Leads_Capture_Plugin {
 
 		$this->booted = true;
 
-		add_action( 'init', array( $this, 'load_textdomain' ) );
+		add_action( 'init', array( $this, 'load_textdomain' ), 0 );
+		add_action( 'init', array( $this, 'register_settings_tabs' ), 1 );
 		add_action( 'init', array( $this, 'register_capture_profiles' ), 11 );
 		add_action( 'init', array( $this, 'register_optional_capture_modules' ), 12 );
 		$this->settings->register_hooks();
@@ -95,6 +95,14 @@ class CRM_Leads_Capture_Plugin {
 			'crm-leads-capture',
 			false,
 			dirname( CRM_LEADS_CAPTURE_BASENAME ) . '/languages'
+		);
+	}
+
+	public function register_settings_tabs(): void {
+		$this->settings->register_tab(
+			CRM_Leads_Capture_Profile_Admin::TAB_SLUG,
+			__( 'Perfis de captura', 'crm-leads-capture' ),
+			array( $this->profile_admin, 'render_tab' )
 		);
 	}
 

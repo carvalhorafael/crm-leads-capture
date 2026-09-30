@@ -27,7 +27,8 @@ class PluginBootstrapTest extends WP_UnitTestCase {
 	}
 
 	public function test_plugin_registers_textdomain_loader(): void {
-		$this->assertSame( 10, has_action( 'init', array( crm_leads_capture(), 'load_textdomain' ) ) );
+		$this->assertSame( 0, has_action( 'init', array( crm_leads_capture(), 'load_textdomain' ) ) );
+		$this->assertSame( 1, has_action( 'init', array( crm_leads_capture(), 'register_settings_tabs' ) ) );
 		$this->assertSame( 11, has_action( 'init', array( crm_leads_capture(), 'register_capture_profiles' ) ) );
 		$this->assertSame( 12, has_action( 'init', array( crm_leads_capture(), 'register_optional_capture_modules' ) ) );
 	}

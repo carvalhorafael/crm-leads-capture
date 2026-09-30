@@ -22,6 +22,8 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
   válidos para campos `select`.
 - Integra a administração de perfis como aba da página principal do plugin, sem
   criar um segundo submenu em Configurações.
+- Adia o registro traduzido da aba de perfis até `init`, evitando o aviso de
+  carregamento prematuro de traduções no WordPress 6.7 ou superior.
 
 ## 0.6.1 - captura em site privado
 
