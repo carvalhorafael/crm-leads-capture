@@ -11,7 +11,7 @@ use CRMLeadsCapture\Tests\TestCase;
 use CRM_Leads_Capture_Brevo_Client;
 use CRM_Leads_Capture_Brevo_Provider;
 use CRM_Leads_Capture_Processor;
-use CRM_Leads_Capture_Profile_Defaults;
+use CRM_Leads_Capture_Commercial_Profile_Fixtures;
 use CRM_Leads_Capture_Profile_Registry;
 use CRM_Leads_Capture_Provider_Registry;
 use CRM_Leads_Capture_RD_Station_Client;
@@ -35,9 +35,6 @@ class CaptureProviderMatrixTestSettings extends CRM_Leads_Capture_Settings {
 		return 'default-conversion';
 	}
 
-	public function service_success_message(): string {
-		return 'Mensagem COO.';
-	}
 }
 
 class CaptureProviderMatrixTest extends TestCase {
@@ -55,7 +52,7 @@ class CaptureProviderMatrixTest extends TestCase {
 		parent::set_up();
 		$this->settings = new CaptureProviderMatrixTestSettings();
 		$this->profiles = new CRM_Leads_Capture_Profile_Registry();
-		( new CRM_Leads_Capture_Profile_Defaults( $this->settings ) )->register( $this->profiles );
+		CRM_Leads_Capture_Commercial_Profile_Fixtures::register( $this->profiles );
 
 		$this->providers = new CRM_Leads_Capture_Provider_Registry();
 		$this->providers->register(
@@ -89,11 +86,11 @@ class CaptureProviderMatrixTest extends TestCase {
 
 	public function test_brevo_global_covers_material_coo_and_speaker(): void {
 		$this->assertMaterialReachesProvider( 'brevo' );
-		$this->assertCommercialProfileReachesProvider( 'brevo', CRM_Leads_Capture_Profile_Defaults::COO_SLUG, $this->coo_input() );
+		$this->assertCommercialProfileReachesProvider( 'brevo', CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG, $this->coo_input() );
 		$this->assertSame( 'Acme', $this->brevo_contact['attributes']['COMPANY'] );
 		$this->assertSame( 'https://example.com/coo', $this->brevo_contact['attributes']['PAGE_URL'] );
 
-		$this->assertCommercialProfileReachesProvider( 'brevo', CRM_Leads_Capture_Profile_Defaults::SPEAKER_SLUG, $this->speaker_input() );
+		$this->assertCommercialProfileReachesProvider( 'brevo', CRM_Leads_Capture_Commercial_Profile_Fixtures::SPEAKER_SLUG, $this->speaker_input() );
 		$this->assertSame( 'Summit 2027', $this->brevo_contact['attributes']['EVENT_NAME'] );
 		$this->assertSame( 500, $this->brevo_contact['attributes']['AUDIENCE_SIZE'] );
 		$this->assertSame( 'hibrido', $this->brevo_contact['attributes']['EVENT_FORMAT'] );
@@ -102,13 +99,13 @@ class CaptureProviderMatrixTest extends TestCase {
 
 	public function test_rd_station_global_covers_material_coo_and_speaker(): void {
 		$this->assertMaterialReachesProvider( 'rd_station' );
-		$this->assertCommercialProfileReachesProvider( 'rd_station', CRM_Leads_Capture_Profile_Defaults::COO_SLUG, $this->coo_input() );
+		$this->assertCommercialProfileReachesProvider( 'rd_station', CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG, $this->coo_input() );
 		$payload = $this->rd_event['payload'];
 		$this->assertSame( 'Acme', $payload['company_name'] );
 		$this->assertSame( 'ceo', $payload['job_title'] );
 		$this->assertSame( 'https://example.com/coo', $payload['cf_page_url'] );
 
-		$this->assertCommercialProfileReachesProvider( 'rd_station', CRM_Leads_Capture_Profile_Defaults::SPEAKER_SLUG, $this->speaker_input() );
+		$this->assertCommercialProfileReachesProvider( 'rd_station', CRM_Leads_Capture_Commercial_Profile_Fixtures::SPEAKER_SLUG, $this->speaker_input() );
 		$payload = $this->rd_event['payload'];
 		$this->assertSame( 'Summit 2027', $payload['cf_event_name'] );
 		$this->assertSame( '500', $payload['cf_audience_size'] );
@@ -151,7 +148,7 @@ class CaptureProviderMatrixTest extends TestCase {
 		$result = $processor->process(
 			$profile_slug,
 			array_merge( array( '_wpnonce' => 'valid' ), $input ),
-			array( 'page_url' => 'https://example.com/' . ( CRM_Leads_Capture_Profile_Defaults::COO_SLUG === $profile_slug ? 'coo' : 'speaker' ) )
+			array( 'page_url' => 'https://example.com/' . ( CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG === $profile_slug ? 'coo' : 'speaker' ) )
 		);
 
 		$this->assertTrue( $result->is_successful(), $result->message() );

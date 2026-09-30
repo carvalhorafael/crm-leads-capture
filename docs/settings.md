@@ -14,9 +14,11 @@ Configurações > CRM Leads Capture
 A tela é organizada em abas:
 
 - **General**: define o único provider usado por todas as capturas da instalação.
-  Também define uma URL de entrega padrão e quais módulos específicos do site
-  ficam ativos.
-- **Messages**: personaliza mensagens públicas de sucesso e erro.
+  Também define uma URL de entrega padrão e a compatibilidade temporária com
+  materiais gratuitos.
+- **Messages**: personaliza a mensagem de sucesso dos materiais gratuitos
+  legados e as mensagens públicas de erro. Cada perfil administrável possui sua
+  própria mensagem de sucesso.
 - **RD Station**: ativa o provider RD Station e configura suas credenciais e
   padrões de conversão.
 - **Brevo**: ativa o provider Brevo e configura suas credenciais e lista padrão.
@@ -25,18 +27,16 @@ Mais de um provider pode permanecer configurado ao mesmo tempo, mas somente o
 provider global escolhido na aba **General** recebe envios. Materiais, páginas e
 perfis não podem sobrescrever essa escolha.
 
-## Módulos opcionais
+## Compatibilidade
 
 O núcleo genérico, a administração de perfis e os providers ficam sempre
-disponíveis. Dois módulos podem ser desligados independentemente:
+disponíveis. Há somente um módulo opcional:
 
-- **Perfis comerciais**: registra `coo-as-a-service` e `speaker-invitation`;
-- **Materiais gratuitos**: ativa actions, REST, metaboxes, avisos e assets do
-  contrato de materiais.
+- **Materiais gratuitos legados**: ativa actions, REST, metaboxes, avisos e
+  assets do contrato anterior de materiais.
 
-Os dois começam ativos para preservar sites existentes. Em uma instalação que
-usa apenas perfis próprios, podem ser desligados na aba **General**. Desativar
-perfis comerciais não remove nem desativa perfis criados no admin.
+Ele começa ativo para preservar sites existentes e pode ser desligado na aba
+**General**. Perfis administráveis não dependem dessa configuração.
 
 Ambientes que controlam módulos por código podem usar o filtro:
 
@@ -51,7 +51,7 @@ add_filter(
 );
 ```
 
-Identificadores: `commercial_profiles` e `free_material_compatibility`.
+Identificador: `free_material_compatibility`.
 
 ## Estrutura da option
 
@@ -68,7 +68,6 @@ array(
     'active_provider' => 'brevo',
     'default_delivery_url' => 'https://example.com/obrigado',
     'modules' => array(
-        'commercial_profiles' => true,
         'free_material_compatibility' => true,
     ),
     'providers'       => array(

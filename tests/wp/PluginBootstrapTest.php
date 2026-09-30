@@ -44,19 +44,17 @@ class PluginBootstrapTest extends WP_UnitTestCase {
 			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
 			array(
 				'modules' => array(
-					'commercial_profiles'         => false,
 					'free_material_compatibility' => false,
 				),
 			)
 		);
 
-		$this->assertFalse( crm_leads_capture()->module_enabled( 'commercial_profiles' ) );
 		$this->assertFalse( crm_leads_capture()->module_enabled( 'free_material_compatibility' ) );
 		$this->assertFalse( crm_leads_capture()->module_enabled( 'unknown' ) );
 
-		$filter = static fn( bool $enabled, string $module ): bool => 'commercial_profiles' === $module ? true : $enabled;
+		$filter = static fn( bool $enabled, string $module ): bool => 'free_material_compatibility' === $module ? true : $enabled;
 		add_filter( 'crm_leads_capture_module_enabled', $filter, 10, 2 );
-		$this->assertTrue( crm_leads_capture()->module_enabled( 'commercial_profiles' ) );
+		$this->assertTrue( crm_leads_capture()->module_enabled( 'free_material_compatibility' ) );
 		remove_filter( 'crm_leads_capture_module_enabled', $filter, 10 );
 	}
 

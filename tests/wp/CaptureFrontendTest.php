@@ -214,6 +214,36 @@ class CaptureFrontendTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Sensitive', $response->get_data()['message'] );
 	}
 
+	public function test_profile_without_custom_message_uses_neutral_success_text(): void {
+		$profiles = new CRM_Leads_Capture_Profile_Registry();
+		$profile  = new CRM_Leads_Capture_Profile(
+			'neutral-success',
+			array( new CRM_Leads_Capture_Field( 'email', array( 'type' => 'email', 'group' => 'lead', 'required' => true ) ) )
+		);
+		$profiles->register( $profile );
+		$providers = new CRM_Leads_Capture_Provider_Registry();
+		$providers->register( $this->provider );
+		$processor = new CRM_Leads_Capture_Processor(
+			$profiles,
+			$providers,
+			static fn(): string => 'brevo',
+			static fn( string $nonce, string $action ): bool => false !== wp_verify_nonce( $nonce, $action )
+		);
+		$frontend = new CRM_Leads_Capture_Frontend( $profiles, $processor, new CRM_Leads_Capture_Settings() );
+		$request  = $this->request(
+			'neutral-success',
+			array(
+				CRM_Leads_Capture_Frontend::REST_NONCE_FIELD => wp_create_nonce( $profile->nonce_action() ),
+				'email' => 'rafael@example.com',
+			)
+		);
+
+		$response = $frontend->handle_rest_request( $request );
+
+		$this->assertSame( 'Cadastro recebido com sucesso.', $response->get_data()['message'] );
+		$this->assertStringNotContainsString( 'material', strtolower( $response->get_data()['message'] ) );
+	}
+
 	public function test_helpers_render_native_fallback_and_accessible_message(): void {
 		$fields = $this->frontend->form_fields( 'generic-test' );
 

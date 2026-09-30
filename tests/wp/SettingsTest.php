@@ -23,6 +23,16 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertSame( 10, has_action( 'admin_init', array( crm_leads_capture()->settings(), 'register_settings' ) ) );
 	}
 
+	public function test_general_settings_expose_only_material_compatibility(): void {
+		global $wp_settings_fields;
+		$this->settings->register_settings();
+		$fields = $wp_settings_fields['crm-leads-capture-general']['crm_leads_capture_modules_section'];
+
+		$this->assertArrayHasKey( 'crm_leads_capture_free_material_compatibility', $fields );
+		$this->assertArrayNotHasKey( 'crm_leads_capture_commercial_profiles', $fields );
+		$this->assertCount( 1, $fields );
+	}
+
 	public function test_reads_api_key_and_default_list_id_from_grouped_option(): void {
 		update_option(
 			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
@@ -43,7 +53,6 @@ class SettingsTest extends WP_UnitTestCase {
 
 	public function test_active_provider_defaults_to_brevo_when_not_explicitly_configured(): void {
 		$this->assertSame( 'brevo', $this->settings->active_provider() );
-		$this->assertTrue( $this->settings->commercial_profiles_enabled() );
 		$this->assertTrue( $this->settings->free_material_compatibility_enabled() );
 	}
 
@@ -59,16 +68,14 @@ class SettingsTest extends WP_UnitTestCase {
 		$sanitized = $this->settings->sanitize_options(
 			array(
 				'active_provider' => 'rd_station',
-				'modules'         => array( 'commercial_profiles' => '1' ),
+				'modules'         => array(),
 			)
 		);
 
-		$this->assertTrue( $sanitized['modules']['commercial_profiles'] );
 		$this->assertFalse( $sanitized['modules']['free_material_compatibility'] );
 		$this->assertSame( 'rd-key', $sanitized['providers']['rd_station']['api_key'] );
 
 		update_option( CRM_Leads_Capture_Settings::OPTION_SETTINGS, $sanitized );
-		$this->assertTrue( $this->settings->commercial_profiles_enabled() );
 		$this->assertFalse( $this->settings->free_material_compatibility_enabled() );
 	}
 
@@ -77,7 +84,6 @@ class SettingsTest extends WP_UnitTestCase {
 			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
 			array(
 				'modules' => array(
-					'commercial_profiles'         => false,
 					'free_material_compatibility' => false,
 				),
 			)
@@ -85,7 +91,6 @@ class SettingsTest extends WP_UnitTestCase {
 
 		$sanitized = $this->settings->sanitize_options( array( 'success_message' => 'Tudo certo.' ) );
 
-		$this->assertFalse( $sanitized['modules']['commercial_profiles'] );
 		$this->assertFalse( $sanitized['modules']['free_material_compatibility'] );
 	}
 
@@ -281,19 +286,6 @@ class SettingsTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( 'Tudo certo. Redirecionando para o material.', $this->settings->success_message() );
-	}
-
-	public function test_service_success_message_uses_custom_text_and_falls_back_to_default(): void {
-		$this->assertStringContainsString( 'analisar pessoalmente', $this->settings->service_success_message() );
-
-		update_option(
-			CRM_Leads_Capture_Settings::OPTION_SETTINGS,
-			array(
-				'service_success_message' => 'Recebemos o contexto da sua operação.',
-			)
-		);
-
-		$this->assertSame( 'Recebemos o contexto da sua operação.', $this->settings->service_success_message() );
 	}
 
 	public function test_default_delivery_url_uses_configured_value(): void {

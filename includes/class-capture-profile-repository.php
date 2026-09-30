@@ -118,11 +118,35 @@ class CRM_Leads_Capture_Profile_Repository {
 				continue;
 			}
 			$seen[ $field_name ] = true;
-			$fields[] = array(
-				'name'     => $field_name,
-				'type'     => $type,
-				'group'    => $group,
-				'required' => ! empty( $field['required'] ),
+			$allowed_values = array();
+			if ( 'select' === $type ) {
+				$submitted_values = is_array( $field['allowed_values'] ?? null ) ? $field['allowed_values'] : explode( ',', (string) ( $field['allowed_values'] ?? '' ) );
+				foreach ( $submitted_values as $value ) {
+					$value = $this->clean_key( $value );
+					if ( '' !== $value ) {
+						$allowed_values[] = $value;
+					}
+				}
+				$allowed_values = array_values( array_unique( $allowed_values ) );
+				if ( array() === $allowed_values ) {
+					add_settings_error(
+						self::OPTION_PROFILES,
+						'invalid_select_values',
+						__( 'Campos do tipo select precisam informar pelo menos um valor permitido.', 'crm-leads-capture' )
+					);
+					continue;
+				}
+			}
+			$fields[] = array_filter(
+				array(
+					'name'           => $field_name,
+					'type'           => $type,
+					'group'          => $group,
+					'required'       => ! empty( $field['required'] ),
+					'allowed_values' => $allowed_values,
+				),
+				static fn( $value, string $key ): bool => 'allowed_values' !== $key || array() !== $value,
+				ARRAY_FILTER_USE_BOTH
 			);
 		}
 		if ( array() === $fields ) {

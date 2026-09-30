@@ -4,7 +4,7 @@ O núcleo genérico representa cada formulário por um perfil de captura. O
 [contrato genérico de frontend](capture-frontend.md) já permite que novos
 formulários usem REST com aprimoramento progressivo ou `admin-post.php` sem
 JavaScript. Materiais gratuitos passam por um adaptador do pipeline; os perfis
-comerciais nativos usam diretamente o contrato genérico nos novos templates.
+criados no admin usam diretamente o contrato genérico nos novos templates.
 
 ## Contratos
 
@@ -20,17 +20,13 @@ comerciais nativos usam diretamente o contrato genérico nos novos templates.
 - `CRM_Leads_Capture_Processor` verifica nonce e honeypot, normaliza os
   campos declarados, resolve o provider global e encaminha a submissão.
 
-O registry também recebe dois perfis comerciais nativos:
+O registry recebe somente os perfis persistidos pela instalação. O plugin não
+registra perfis comerciais ou conceitos de negócio automaticamente. Assim, um
+site que não oferece COO as a Service ou palestras não precisa desativar nada e
+não recebe esses schemas.
 
-- `coo-as-a-service`;
-- `speaker-invitation`.
-
-Esse registro depende do módulo **Perfis comerciais**. Sites que não oferecem
-esses formulários podem desativá-lo sem afetar o registry, o processador ou os
-perfis próprios.
-
-Perfis salvos pelo administrador são carregados depois dos padrões nativos. Um
-perfil persistido com o mesmo slug substitui o padrão de forma explícita.
+COO e palestras, quando usados, são perfis comuns criados no admin. Podem ser
+editados, associados a páginas ou excluídos pelo mesmo fluxo dos demais.
 
 Campos ausentes do schema são ignorados. Assim, valores enviados pelo navegador
 não podem escolher provider, listas, conversões ou mapeamentos.
@@ -80,3 +76,5 @@ Para o RD Station, consulte o
 [mapeamento de conversão, tags e campos por perfil](rd-station-profile-mapping.md).
 A criação e associação desses perfis está descrita em
 [administração de perfis e páginas](capture-profile-administration.md).
+Um exemplo completo de configuração para COO e palestras está em
+[perfis comerciais administráveis](commercial-capture-profiles.md).

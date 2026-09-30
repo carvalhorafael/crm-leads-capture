@@ -98,15 +98,11 @@ class CRM_Leads_Capture_Plugin {
 	}
 
 	public function register_capture_profiles(): void {
-		if ( $this->module_enabled( 'commercial_profiles' ) ) {
-			( new CRM_Leads_Capture_Profile_Defaults( $this->settings ) )->register( $this->capture_profiles );
-		}
 		$this->profile_repository->register_profiles( $this->capture_profiles );
 	}
 
 	public function module_enabled( string $module ): bool {
 		$defaults = array(
-			'commercial_profiles'         => $this->settings->commercial_profiles_enabled(),
 			'free_material_compatibility' => $this->settings->free_material_compatibility_enabled(),
 		);
 		$enabled = $defaults[ $module ] ?? false;

@@ -8,9 +8,12 @@ Este plugin processa submissões de captura, valida nonce/honeypot/dados do lead
 monta um payload normalizado e delega o envio ao provider de CRM ativo.
 
 Formulários reutilizáveis são definidos por perfis com schema, validação,
-mapeamento do CRM e comportamento de sucesso. O plugin inclui os perfis
-`coo-as-a-service` e `speaker-invitation`, além do adaptador compatível de
-materiais gratuitos.
+mapeamento do CRM e comportamento de sucesso. Cada instalação cria somente os
+perfis que utiliza em **Configurações > Perfis de captura**. O plugin inclui
+apenas o adaptador compatível de materiais gratuitos.
+
+Veja [administração de perfis](docs/capture-profile-administration.md) e o
+exemplo de [perfis comerciais administráveis](docs/commercial-capture-profiles.md).
 
 O domínio persistente de materiais gratuitos continua fora deste plugin. Quando
 o plugin `free-materials` estiver ativo, este plugin consome o CPT
@@ -31,10 +34,9 @@ O provider ativo é escolhido em `Configurações > CRM Leads Capture` e determi
 todos os envios da instalação. Materiais, páginas e formulários não podem trocar
 o provider global.
 
-Na mesma tela, módulos específicos podem ser desligados. Um site que usa apenas
-perfis próprios não precisa registrar os perfis comerciais nem carregar os
-adaptadores de materiais. Os módulos permanecem ativos por
-padrão apenas para preservar instalações existentes.
+Na mesma tela, a compatibilidade com materiais gratuitos pode ser desligada.
+Ela permanece ativa por padrão apenas para preservar instalações existentes;
+os perfis administráveis não dependem dela.
 
 ## Configuração
 

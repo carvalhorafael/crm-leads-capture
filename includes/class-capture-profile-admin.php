@@ -27,8 +27,25 @@ class CRM_Leads_Capture_Profile_Admin {
 	public function register_hooks(): void {
 		add_action( 'admin_menu', array( $this, 'register_page' ) );
 		add_action( 'admin_init', array( $this, 'register_setting' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'add_meta_boxes_page', array( $this, 'register_page_meta_box' ) );
 		add_action( 'save_post_page', array( $this, 'save_page_association' ) );
+	}
+
+	/** @param string $hook_suffix Current admin page hook. */
+	public function enqueue_assets( string $hook_suffix ): void {
+		if ( 'settings_page_' . self::PAGE_SLUG !== $hook_suffix ) {
+			return;
+		}
+
+		$path = CRM_LEADS_CAPTURE_DIR . 'assets/js/capture-profile-admin.js';
+		wp_enqueue_script(
+			'crm-leads-capture-profile-admin',
+			plugins_url( 'assets/js/capture-profile-admin.js', CRM_LEADS_CAPTURE_FILE ),
+			array(),
+			is_file( $path ) ? (string) filemtime( $path ) : CRM_LEADS_CAPTURE_VERSION,
+			true
+		);
 	}
 
 	public function register_page(): void {
@@ -166,23 +183,42 @@ class CRM_Leads_Capture_Profile_Admin {
 	/** @param mixed $fields */
 	private function render_fields( $fields ): void {
 		$fields = is_array( $fields ) ? array_values( $fields ) : array();
-		$fields = array_merge( $fields, array_fill( 0, 3, array() ) );
-		foreach ( $fields as $index => $field ) {
-			$field = is_array( $field ) ? $field : array();
-			$base  = CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES . '[fields][' . $index . ']';
-			?>
-			<p>
-				<input placeholder="<?php echo esc_attr__( 'nome_do_campo', 'crm-leads-capture' ); ?>" name="<?php echo esc_attr( $base ); ?>[name]" value="<?php echo esc_attr( (string) ( $field['name'] ?? '' ) ); ?>">
-				<select name="<?php echo esc_attr( $base ); ?>[type]">
-					<?php foreach ( $this->repository->field_types() as $type ) : ?><option value="<?php echo esc_attr( $type ); ?>" <?php selected( $field['type'] ?? 'text', $type ); ?>><?php echo esc_html( $type ); ?></option><?php endforeach; ?>
-				</select>
-				<select name="<?php echo esc_attr( $base ); ?>[group]">
-					<?php foreach ( $this->repository->field_groups() as $group ) : ?><option value="<?php echo esc_attr( $group ); ?>" <?php selected( $field['group'] ?? 'custom_fields', $group ); ?>><?php echo esc_html( $group ); ?></option><?php endforeach; ?>
-				</select>
-				<label><input type="checkbox" name="<?php echo esc_attr( $base ); ?>[required]" value="1" <?php checked( ! empty( $field['required'] ) ); ?>> <?php echo esc_html__( 'Obrigatório', 'crm-leads-capture' ); ?></label>
-			</p>
-			<?php
+		if ( array() === $fields ) {
+			$fields[] = array();
 		}
+		?>
+		<div data-crm-profile-fields data-next-index="<?php echo esc_attr( (string) count( $fields ) ); ?>">
+			<div data-crm-profile-field-list>
+				<?php foreach ( $fields as $index => $field ) : ?>
+					<?php $this->render_field_row( is_array( $field ) ? $field : array(), (string) $index ); ?>
+				<?php endforeach; ?>
+			</div>
+			<p><button type="button" class="button" data-crm-profile-add-field><?php echo esc_html__( 'Adicionar campo', 'crm-leads-capture' ); ?></button></p>
+			<template data-crm-profile-field-template>
+				<?php $this->render_field_row( array(), '__INDEX__' ); ?>
+			</template>
+		</div>
+		<?php
+	}
+
+	/** @param array<string, mixed> $field */
+	private function render_field_row( array $field, string $index ): void {
+		$base           = CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES . '[fields][' . $index . ']';
+		$allowed_values = implode( ', ', (array) ( $field['allowed_values'] ?? array() ) );
+		?>
+		<p data-crm-profile-field-row>
+			<input placeholder="<?php echo esc_attr__( 'nome_do_campo', 'crm-leads-capture' ); ?>" name="<?php echo esc_attr( $base ); ?>[name]" value="<?php echo esc_attr( (string) ( $field['name'] ?? '' ) ); ?>">
+			<select name="<?php echo esc_attr( $base ); ?>[type]">
+				<?php foreach ( $this->repository->field_types() as $type ) : ?><option value="<?php echo esc_attr( $type ); ?>" <?php selected( $field['type'] ?? 'text', $type ); ?>><?php echo esc_html( $type ); ?></option><?php endforeach; ?>
+			</select>
+			<select name="<?php echo esc_attr( $base ); ?>[group]">
+				<?php foreach ( $this->repository->field_groups() as $group ) : ?><option value="<?php echo esc_attr( $group ); ?>" <?php selected( $field['group'] ?? 'custom_fields', $group ); ?>><?php echo esc_html( $group ); ?></option><?php endforeach; ?>
+			</select>
+			<input placeholder="<?php echo esc_attr__( 'valores do select, separados por vírgula', 'crm-leads-capture' ); ?>" name="<?php echo esc_attr( $base ); ?>[allowed_values]" value="<?php echo esc_attr( $allowed_values ); ?>">
+			<label><input type="checkbox" name="<?php echo esc_attr( $base ); ?>[required]" value="1" <?php checked( ! empty( $field['required'] ) ); ?>> <?php echo esc_html__( 'Obrigatório', 'crm-leads-capture' ); ?></label>
+			<button type="button" class="button-link-delete" data-crm-profile-remove-field><?php echo esc_html__( 'Remover', 'crm-leads-capture' ); ?></button>
+		</p>
+		<?php
 	}
 
 	/** @param array<string, mixed> $config */

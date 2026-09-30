@@ -60,8 +60,9 @@ class CommercialCaptureProfilesTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
+		update_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES, CRM_Leads_Capture_Commercial_Profile_Fixtures::configs() );
 		$this->profiles = new CRM_Leads_Capture_Profile_Registry();
-		( new CRM_Leads_Capture_Profile_Defaults( crm_leads_capture()->settings() ) )->register( $this->profiles );
+		( new CRM_Leads_Capture_Profile_Repository( crm_leads_capture()->settings() ) )->register_profiles( $this->profiles );
 		$this->provider = new CRM_Leads_Capture_Commercial_Test_Provider();
 		$providers      = new CRM_Leads_Capture_Provider_Registry();
 		$providers->register( $this->provider );
@@ -74,9 +75,14 @@ class CommercialCaptureProfilesTest extends WP_UnitTestCase {
 		$this->frontend = new CRM_Leads_Capture_Frontend( $this->profiles, $processor, crm_leads_capture()->settings() );
 	}
 
-	public function test_builtin_commercial_profiles_use_only_generic_contract(): void {
-		$coo     = $this->profiles->resolve( CRM_Leads_Capture_Profile_Defaults::COO_SLUG );
-		$speaker = $this->profiles->resolve( CRM_Leads_Capture_Profile_Defaults::SPEAKER_SLUG );
+	public function tear_down(): void {
+		delete_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES );
+		parent::tear_down();
+	}
+
+	public function test_persisted_commercial_profiles_use_only_generic_contract(): void {
+		$coo     = $this->profiles->resolve( CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG );
+		$speaker = $this->profiles->resolve( CRM_Leads_Capture_Commercial_Profile_Fixtures::SPEAKER_SLUG );
 
 		$this->assertNotNull( $coo );
 		$this->assertNotNull( $speaker );
@@ -85,7 +91,7 @@ class CommercialCaptureProfilesTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'event_date', $speaker->fields() );
 		$this->assertNotSame( $coo->success_behavior()['message'], $speaker->success_behavior()['message'] );
 
-		$fields = $this->frontend->form_fields( CRM_Leads_Capture_Profile_Defaults::COO_SLUG );
+		$fields = $this->frontend->form_fields( CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG );
 		$this->assertStringContainsString( 'name="action" value="crm_leads_capture_submit"', $fields );
 		$this->assertStringContainsString( 'name="crm_leads_capture_profile" value="coo-as-a-service"', $fields );
 	}
@@ -93,12 +99,12 @@ class CommercialCaptureProfilesTest extends WP_UnitTestCase {
 	public function test_coo_profile_uses_generic_pipeline_without_local_persistence(): void {
 		global $wpdb;
 		$before = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", 'crm_service_interest' ) );
-		$result = $this->frontend->process_submission( CRM_Leads_Capture_Profile_Defaults::COO_SLUG, $this->valid_coo_request(), 'https://example.com/coo' );
+		$result = $this->frontend->process_submission( CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG, $this->valid_coo_request(), 'https://example.com/coo' );
 		$after  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", 'crm_service_interest' ) );
 
 		$this->assertTrue( $result->is_successful() );
 		$this->assertSame( $before, $after );
-		$this->assertSame( CRM_Leads_Capture_Profile_Defaults::COO_SLUG, $this->provider->last_payload['profile_slug'] );
+		$this->assertSame( CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG, $this->provider->last_payload['profile_slug'] );
 		$this->assertSame( 'Rafael Carvalho', $this->provider->last_payload['lead']['name'] );
 		$this->assertSame( '+5521999999999', $this->provider->last_payload['lead']['whatsapp'] );
 		$this->assertSame( 'Empresa Teste', $this->provider->last_payload['custom_fields']['company'] );
@@ -112,7 +118,7 @@ class CommercialCaptureProfilesTest extends WP_UnitTestCase {
 
 	public function test_invalid_coo_fields_are_rejected_without_sending_or_storing(): void {
 		$result = $this->frontend->process_submission(
-			CRM_Leads_Capture_Profile_Defaults::COO_SLUG,
+			CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG,
 			$this->valid_coo_request( array( 'consent' => '' ) )
 		);
 
@@ -125,7 +131,7 @@ class CommercialCaptureProfilesTest extends WP_UnitTestCase {
 	public function test_provider_failure_returns_controlled_generic_rest_response(): void {
 		$this->provider->should_succeed = false;
 		$request = new WP_REST_Request( 'POST', '/crm-leads-capture/v1/capture/coo-as-a-service' );
-		$request->set_url_params( array( 'profile' => CRM_Leads_Capture_Profile_Defaults::COO_SLUG ) );
+		$request->set_url_params( array( 'profile' => CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG ) );
 		foreach ( $this->valid_coo_request() as $key => $value ) {
 			$request->set_param( $key, $value );
 		}
@@ -142,7 +148,7 @@ class CommercialCaptureProfilesTest extends WP_UnitTestCase {
 
 	public function test_speaker_profile_sends_every_required_field_without_storage(): void {
 		$result = $this->frontend->process_submission(
-			CRM_Leads_Capture_Profile_Defaults::SPEAKER_SLUG,
+			CRM_Leads_Capture_Commercial_Profile_Fixtures::SPEAKER_SLUG,
 			$this->valid_speaker_request(),
 			'https://example.com/palestras'
 		);
@@ -160,7 +166,7 @@ class CommercialCaptureProfilesTest extends WP_UnitTestCase {
 	private function valid_coo_request( array $overrides = array() ): array {
 		return array_merge(
 			array(
-				'_wpnonce' => wp_create_nonce( 'crm_leads_capture_' . CRM_Leads_Capture_Profile_Defaults::COO_SLUG ),
+				'_wpnonce' => wp_create_nonce( 'crm_leads_capture_' . CRM_Leads_Capture_Commercial_Profile_Fixtures::COO_SLUG ),
 				'crm_leads_capture_website' => '',
 				'name' => 'Rafael Carvalho', 'email' => 'rafael@example.com', 'whatsapp' => '+55 21 99999-9999',
 				'company' => 'Empresa Teste', 'role' => 'founder', 'company_url' => 'https://example.com',
@@ -174,7 +180,7 @@ class CommercialCaptureProfilesTest extends WP_UnitTestCase {
 	/** @return array<string, mixed> */
 	private function valid_speaker_request(): array {
 		return array(
-			'_wpnonce' => wp_create_nonce( 'crm_leads_capture_' . CRM_Leads_Capture_Profile_Defaults::SPEAKER_SLUG ),
+			'_wpnonce' => wp_create_nonce( 'crm_leads_capture_' . CRM_Leads_Capture_Commercial_Profile_Fixtures::SPEAKER_SLUG ),
 			'name' => 'Rafael Carvalho', 'email' => 'rafael@example.com', 'whatsapp' => '+55 21 99999-9999',
 			'organization' => 'Empresa Teste', 'event_name' => 'Summit 2027',
 			'objective_context' => 'Debater operações.', 'audience_profile' => 'Executivos de operações.',

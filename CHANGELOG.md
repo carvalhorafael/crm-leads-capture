@@ -12,11 +12,14 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
   completo de campos customizados para Brevo e RD Station.
 - Adiciona administração de perfis, associação por página, diagnóstico de
   overrides antigos, matriz de regressão e checklist seguro de atualização.
-- Torna perfis comerciais e a compatibilidade de materiais módulos opcionais,
-  evitando hooks, assets e avisos específicos em sites que usam apenas o núcleo
-  genérico.
+- Torna a compatibilidade de materiais um módulo opcional, evitando hooks,
+  assets e avisos específicos em sites que usam apenas o núcleo genérico.
 - Remove o contrato de COO que ainda não havia sido usado; o formulário nasce
   diretamente no perfil genérico `coo-as-a-service`.
+- Remove os perfis comerciais embutidos e o respectivo controle global. COO e
+  palestras passam a ser perfis comuns, persistidos e editáveis por instalação.
+- Permite adicionar e remover campos no editor de perfis e configurar valores
+  válidos para campos `select`.
 
 ## 0.6.1 - captura em site privado
 

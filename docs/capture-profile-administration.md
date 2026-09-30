@@ -3,6 +3,8 @@
 Administradores podem criar perfis em **Configurações > Perfis de captura**.
 Cada perfil salva nome, slug, origem, schema de campos, obrigatoriedade,
 mensagem de sucesso, redirect e a configuração do provider global ativo.
+Perfis são adicionados e removidos nessa própria tela; nenhum perfil de negócio
+é criado automaticamente pelo plugin.
 
 A tela nunca oferece seletor de provider. Ao trocar o provider global nas
 configurações do plugin, o editor passa a mostrar o painel correspondente sem
@@ -10,8 +12,10 @@ apagar a configuração anteriormente salva para o provider inativo.
 
 ## Campos e diagnóstico
 
-Cada campo possui nome, tipo, grupo canônico e indicação de obrigatoriedade. O
-painel de destino permite configurar:
+Cada campo possui nome, tipo, grupo canônico e indicação de obrigatoriedade.
+Campos `select` também aceitam uma lista de valores permitidos. O botão
+**Adicionar campo** permite montar schemas de qualquer tamanho e cada linha pode
+ser removida individualmente. O painel de destino permite configurar:
 
 - Brevo: uma ou mais listas e o mapa de atributos;
 - RD Station: identificador de conversão, tags e o mapa de campos.

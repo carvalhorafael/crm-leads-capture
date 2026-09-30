@@ -35,7 +35,6 @@ require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-recording-provider.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-field.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-registry.php';
-require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-defaults.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-profile-repository.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-submission.php';
 require_once CRM_LEADS_CAPTURE_DIR . 'includes/class-capture-processor.php';

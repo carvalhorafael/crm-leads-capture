@@ -13,9 +13,8 @@ está em produção para rollback.
 4. Se o provider for Brevo, confirme a lista padrão ou a lista de cada material.
 5. Se for RD Station, confirme o identificador de conversão padrão ou o de cada
    material.
-6. Em **General > Módulos opcionais**, mantenha ativos somente os fluxos usados
-   no site. Em uma primeira atualização, preserve os módulos existentes até
-   concluir os smoke tests.
+6. Em **General > Compatibilidade**, mantenha **Materiais gratuitos legados**
+   ativo enquanto o site ainda utilizar esse contrato.
 7. Abra um material gratuito e anote sua URL de entrega, quando esse módulo for usado.
 8. Verifique se o admin mostra o aviso de configuração legada de provider. O
    aviso é diagnóstico: o valor antigo será preservado, mas todos os envios
@@ -32,6 +31,9 @@ fallbacks legados e não exige migração manual dos materiais existentes.
 4. Reative o plugin somente se o WordPress não o mantiver ativo.
 5. Abra **Configurações > CRM Leads Capture** e confirme novamente provider,
    credencial e status.
+6. Antes de publicar formulários de COO ou palestras, crie os respectivos
+   perfis em **Configurações > Perfis de captura**. Eles não são instalados
+   automaticamente em sites que não os utilizam.
 
 O pacote precisa conter uma única pasta raiz `crm-leads-capture/`. Ele não deve
 conter `tests/`, `vendor/`, `.github/`, `.env`, logs ou dumps.

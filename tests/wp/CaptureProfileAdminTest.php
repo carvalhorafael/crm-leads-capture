@@ -46,6 +46,41 @@ class CaptureProfileAdminTest extends WP_UnitTestCase {
 		$this->assertSame( array( 12, 18 ), $registry->resolve( 'coo' )->provider_config( 'brevo' )['list_ids'] );
 	}
 
+	public function test_sanitizes_allowed_values_for_select_fields(): void {
+		$input = $this->profile_input();
+		$input['fields'][] = array(
+			'name'           => 'role',
+			'type'           => 'select',
+			'group'          => 'custom_fields',
+			'required'       => '1',
+			'allowed_values' => 'founder, CEO, founder, executive',
+		);
+
+		$config = $this->repository->sanitize_profile( $input );
+
+		$this->assertSame( array( 'founder', 'ceo', 'executive' ), $config['fields'][3]['allowed_values'] );
+	}
+
+	public function test_rejects_select_field_without_allowed_values(): void {
+		$input = $this->profile_input();
+		$input['fields'] = array(
+			array( 'name' => 'role', 'type' => 'select', 'group' => 'custom_fields', 'required' => '1' ),
+		);
+
+		$this->assertNull( $this->repository->sanitize_profile( $input ) );
+		$errors = get_settings_errors( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES );
+		$this->assertSame( 'invalid_select_values', $errors[0]['code'] );
+	}
+
+	public function test_empty_installation_registers_no_business_profiles(): void {
+		delete_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES );
+		$registry = new CRM_Leads_Capture_Profile_Registry();
+
+		$this->repository->register_profiles( $registry );
+
+		$this->assertSame( array(), $registry->all() );
+	}
+
 	public function test_saving_active_provider_preserves_inactive_provider_configuration(): void {
 		$existing = array(
 			'providers' => array(
@@ -132,6 +167,17 @@ class CaptureProfileAdminTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '[providers][brevo]', $output );
 		$this->assertStringNotContainsString( '[providers][rd_station]', $output );
 		$this->assertStringNotContainsString( 'seletor de provider', strtolower( $output ) );
+		$this->assertStringContainsString( 'data-crm-profile-add-field', $output );
+		$this->assertStringContainsString( 'data-crm-profile-remove-field', $output );
+	}
+
+	public function test_admin_script_loads_only_on_profile_page(): void {
+		$this->admin->enqueue_assets( 'settings_page_' . CRM_Leads_Capture_Profile_Admin::PAGE_SLUG );
+		$this->assertTrue( wp_script_is( 'crm-leads-capture-profile-admin', 'enqueued' ) );
+
+		wp_dequeue_script( 'crm-leads-capture-profile-admin' );
+		$this->admin->enqueue_assets( 'settings_page_other' );
+		$this->assertFalse( wp_script_is( 'crm-leads-capture-profile-admin', 'enqueued' ) );
 	}
 
 	/** @return array<string, mixed> */

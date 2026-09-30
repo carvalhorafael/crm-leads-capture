@@ -158,7 +158,7 @@ class CRM_Leads_Capture_Frontend {
 		if ( $matches_profile && 'success' === $status ) {
 			$profile = $this->profiles->resolve( $request_profile );
 			$success = null !== $profile ? $profile->success_behavior() : array();
-			$message = $this->clean_text( $success['message'] ?? $this->settings->success_message() );
+			$message = $this->clean_text( $success['message'] ?? $this->generic_success_message() );
 			$tone    = 'success';
 			$label   = __( 'Sucesso', 'crm-leads-capture' );
 		} elseif ( $matches_profile && 'error' === $status ) {
@@ -195,7 +195,7 @@ class CRM_Leads_Capture_Frontend {
 				'nonceField'          => self::REST_NONCE_FIELD,
 				'genericMessage'      => $this->settings->error_message( 'provider_error' ),
 				'invalidNonceMessage' => $this->settings->error_message( 'invalid_nonce' ),
-				'successMessage'      => $this->settings->success_message(),
+				'successMessage'      => $this->generic_success_message(),
 				'successLabel'        => __( 'Sucesso', 'crm-leads-capture' ),
 				'errorLabel'          => __( 'Erro', 'crm-leads-capture' ),
 			)
@@ -221,7 +221,7 @@ class CRM_Leads_Capture_Frontend {
 		$data     = array(
 			'success' => true,
 			'profile' => $profile_slug,
-			'message' => $this->clean_text( $behavior['message'] ?? $this->settings->success_message() ),
+			'message' => $this->clean_text( $behavior['message'] ?? $this->generic_success_message() ),
 		);
 		$redirect_url = $this->clean_url( $behavior['redirect_url'] ?? '' );
 		if ( '' !== $redirect_url ) {
@@ -274,6 +274,10 @@ class CRM_Leads_Capture_Frontend {
 		)[ $code ] ?? $code;
 
 		return $this->settings->error_message( $mapped_code );
+	}
+
+	private function generic_success_message(): string {
+		return __( 'Cadastro recebido com sucesso.', 'crm-leads-capture' );
 	}
 
 	/**
