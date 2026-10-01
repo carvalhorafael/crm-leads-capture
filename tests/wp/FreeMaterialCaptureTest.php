@@ -86,6 +86,14 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		$this->assertSame(
 			10,
 			has_action(
+				'admin_post_' . CRM_Leads_Capture_Free_Material_Capture::LEGACY_PROVIDER_CLEANUP_ACTION,
+				array( crm_leads_capture()->free_material_capture(), 'handle_legacy_provider_override_cleanup' )
+			)
+		);
+
+		$this->assertSame(
+			10,
+			has_action(
 				'admin_post_' . CRM_Leads_Capture_Free_Material_Capture::ACTION,
 				array( crm_leads_capture()->free_material_capture(), 'handle_request' )
 			)
@@ -526,6 +534,12 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		$material_id = $this->create_material(
 			array( CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'rd_station' )
 		);
+		wp_update_post(
+			array(
+				'ID'         => $material_id,
+				'post_title' => 'Material com provider antigo',
+			)
+		);
 		$administrator_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $administrator_id );
 
@@ -537,8 +551,33 @@ class FreeMaterialCaptureTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'configuração legada de provider', $output );
 		$this->assertStringContainsString( 'preservada', $output );
 		$this->assertStringContainsString( 'Revisar provider global', $output );
+		$this->assertStringContainsString( 'Ver conteúdos afetados', $output );
+		$this->assertStringContainsString( 'Material com provider antigo', $output );
+		$this->assertStringContainsString( CRM_Leads_Capture_Free_Material_Capture::LEGACY_PROVIDER_CLEANUP_ACTION, $output );
+		$this->assertStringContainsString( 'confirm_legacy_provider_cleanup', $output );
+		$this->assertStringContainsString( 'Remover configurações legadas', $output );
 		$this->assertSame( 'rd_station', get_post_meta( $material_id, CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER, true ) );
 		wp_set_current_user( 0 );
+	}
+
+	public function test_cleanup_removes_only_legacy_provider_overrides(): void {
+		$first_id = $this->create_material(
+			array(
+				CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER     => 'brevo',
+				CRM_Leads_Capture_Free_Material_Capture::META_LIST_ID      => 123,
+				CRM_Leads_Capture_Free_Material_Capture::META_DELIVERY_URL => 'https://example.com/material',
+			)
+		);
+		$second_id = $this->create_material(
+			array( CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER => 'rd_station' )
+		);
+
+		$this->assertSame( 2, $this->capture->cleanup_legacy_provider_overrides() );
+		$this->assertSame( '', get_post_meta( $first_id, CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER, true ) );
+		$this->assertSame( '', get_post_meta( $second_id, CRM_Leads_Capture_Free_Material_Capture::META_PROVIDER, true ) );
+		$this->assertSame( '123', get_post_meta( $first_id, CRM_Leads_Capture_Free_Material_Capture::META_LIST_ID, true ) );
+		$this->assertSame( 'https://example.com/material', get_post_meta( $first_id, CRM_Leads_Capture_Free_Material_Capture::META_DELIVERY_URL, true ) );
+		$this->assertSame( 0, $this->capture->legacy_provider_override_count() );
 	}
 
 	public function test_returns_controlled_errors_for_unavailable_global_provider_configuration(): void {

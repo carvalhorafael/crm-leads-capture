@@ -32,6 +32,8 @@ class CRM_Leads_Capture_Free_Material_Capture {
 	public const META_LEGACY_LIST_ID = '_brevo_leads_capture_list_id';
 	public const META_LEGACY_DELIVERY_URL_BREVO = '_brevo_leads_capture_delivery_url';
 	public const META_LEGACY_DELIVERY_URL = '_executive_signal_material_capture_url';
+	public const LEGACY_PROVIDER_CLEANUP_ACTION = 'crm_leads_capture_cleanup_legacy_provider_overrides';
+	public const LEGACY_PROVIDER_CLEANUP_RESULT = 'crm_leads_capture_legacy_provider_cleanup';
 
 	private CRM_Leads_Capture_Settings $settings;
 
@@ -70,6 +72,7 @@ class CRM_Leads_Capture_Free_Material_Capture {
 		add_action( 'save_post_material_gratuito', array( $this, 'save_material_meta_box' ) );
 		add_action( 'admin_notices', array( $this, 'render_free_materials_notice' ) );
 		add_action( 'admin_notices', array( $this, 'render_legacy_provider_override_notice' ) );
+		add_action( 'admin_post_' . self::LEGACY_PROVIDER_CLEANUP_ACTION, array( $this, 'handle_legacy_provider_override_cleanup' ) );
 		add_shortcode( self::SHORTCODE_ERROR_MESSAGE, array( $this, 'render_error_message_shortcode' ) );
 	}
 
@@ -84,6 +87,24 @@ class CRM_Leads_Capture_Free_Material_Capture {
 	public function render_legacy_provider_override_notice(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
+		}
+
+		$request = wp_unslash( $_GET );
+		if ( isset( $request[ self::LEGACY_PROVIDER_CLEANUP_RESULT ] ) ) {
+			$removed = absint( $request[ self::LEGACY_PROVIDER_CLEANUP_RESULT ] );
+			?>
+			<div class="notice notice-success is-dismissible">
+				<p>
+					<?php
+					printf(
+						/* translators: %d: number of contents whose obsolete provider metadata was removed. */
+						esc_html( _n( '%d configuração legada de provider foi removida.', '%d configurações legadas de provider foram removidas.', $removed, 'crm-leads-capture' ) ),
+						(int) $removed
+					);
+					?>
+				</p>
+			</div>
+			<?php
 		}
 
 		$count = $this->legacy_provider_override_count();
@@ -108,8 +129,101 @@ class CRM_Leads_Capture_Free_Material_Capture {
 				?>
 				<a href="<?php echo esc_url( $url ); ?>"><?php echo esc_html__( 'Revisar provider global', 'crm-leads-capture' ); ?></a>
 			</p>
+			<details>
+				<summary><?php echo esc_html__( 'Ver conteúdos afetados', 'crm-leads-capture' ); ?></summary>
+				<ul>
+					<?php foreach ( $this->legacy_provider_override_ids( 20 ) as $post_id ) : ?>
+						<?php
+						$title       = get_the_title( $post_id );
+						$title       = '' !== $title ? $title : __( '(sem título)', 'crm-leads-capture' );
+						$edit_link   = get_edit_post_link( $post_id );
+						$provider_id = $this->clean_string( get_post_meta( $post_id, self::META_PROVIDER, true ) );
+						?>
+						<li>
+							<?php if ( false !== $edit_link ) : ?>
+								<a href="<?php echo esc_url( $edit_link ); ?>"><?php echo esc_html( $title ); ?></a>
+							<?php else : ?>
+								<?php echo esc_html( $title ); ?>
+							<?php endif; ?>
+							<?php
+							printf(
+								/* translators: 1: content ID, 2: obsolete provider label. */
+								esc_html__( '— ID %1$d — provider antigo: %2$s', 'crm-leads-capture' ),
+								(int) $post_id,
+								esc_html( $this->provider_label( $provider_id ) )
+							);
+							?>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+				<?php if ( 20 < $count ) : ?>
+					<p>
+						<?php
+						printf(
+							/* translators: %d: number of additional affected contents omitted from the list. */
+							esc_html__( 'E mais %d conteúdos.', 'crm-leads-capture' ),
+							(int) ( $count - 20 )
+						);
+						?>
+					</p>
+				<?php endif; ?>
+			</details>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="<?php echo esc_attr( self::LEGACY_PROVIDER_CLEANUP_ACTION ); ?>">
+				<?php wp_nonce_field( self::LEGACY_PROVIDER_CLEANUP_ACTION ); ?>
+				<p>
+					<label>
+						<input type="checkbox" name="confirm_legacy_provider_cleanup" value="1" required>
+						<?php echo esc_html__( 'Confirmo que revisei o provider global e quero remover somente as configurações antigas de provider.', 'crm-leads-capture' ); ?>
+					</label>
+				</p>
+				<?php submit_button( __( 'Remover configurações legadas', 'crm-leads-capture' ), 'secondary', 'submit', false ); ?>
+			</form>
 		</div>
 		<?php
+	}
+
+	public function handle_legacy_provider_override_cleanup(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die(
+				esc_html__( 'Você não tem permissão para executar esta limpeza.', 'crm-leads-capture' ),
+				'',
+				array( 'response' => 403 )
+			);
+		}
+
+		check_admin_referer( self::LEGACY_PROVIDER_CLEANUP_ACTION );
+
+		$request = wp_unslash( $_POST );
+		if ( '1' !== ( $request['confirm_legacy_provider_cleanup'] ?? '' ) ) {
+			wp_die(
+				esc_html__( 'Confirme a revisão do provider global antes de remover as configurações antigas.', 'crm-leads-capture' ),
+				'',
+				array( 'response' => 400 )
+			);
+		}
+
+		$removed  = $this->cleanup_legacy_provider_overrides();
+		$redirect = wp_get_referer();
+		if ( false === $redirect ) {
+			$redirect = add_query_arg( 'page', CRM_Leads_Capture_Settings::SETTINGS_PAGE, admin_url( 'options-general.php' ) );
+		}
+		$redirect = remove_query_arg( self::LEGACY_PROVIDER_CLEANUP_RESULT, $redirect );
+		$redirect = add_query_arg( self::LEGACY_PROVIDER_CLEANUP_RESULT, $removed, $redirect );
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	public function cleanup_legacy_provider_overrides(): int {
+		$removed = 0;
+		foreach ( $this->legacy_provider_override_ids() as $post_id ) {
+			if ( delete_post_meta( $post_id, self::META_PROVIDER ) ) {
+				++$removed;
+			}
+		}
+
+		return $removed;
 	}
 
 	public function has_material_configuration(): bool {
@@ -144,6 +258,28 @@ class CRM_Leads_Capture_Free_Material_Capture {
 		);
 
 		return (int) $query->found_posts;
+	}
+
+	/**
+	 * @return int[]
+	 */
+	private function legacy_provider_override_ids( int $limit = -1 ): array {
+		$ids = get_posts(
+			array(
+				'post_type'              => array_values( get_post_types( array(), 'names' ) ),
+				'post_status'            => 'any',
+				'posts_per_page'         => $limit,
+				'fields'                 => 'ids',
+				'meta_key'               => self::META_PROVIDER,
+				'orderby'                => 'ID',
+				'order'                  => 'ASC',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+
+		return array_map( 'intval', $ids );
 	}
 
 	public function register_material_meta_box(): void {

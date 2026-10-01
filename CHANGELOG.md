@@ -4,6 +4,9 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+- Permite listar e remover pelo painel os metadados legados de provider por
+  conteúdo, com confirmação e preservação das demais configurações de captura.
+
 ## 0.7.0 - release
 
 - Adiciona perfis de captura reutilizáveis com provider global e frontend
