@@ -154,8 +154,10 @@ _crm_leads_capture_rd_station_tags
 
 O metadado legado `_crm_leads_capture_provider` é preservado para diagnóstico,
 mas não interfere mais no roteamento. Quando ele existe, o administrador recebe
-um aviso. Para Brevo, se a lista por material estiver vazia, usa a lista padrão
-global.
+um aviso que lista os conteúdos afetados. Depois de revisar o provider global,
+o administrador pode remover esse metadado pelo próprio aviso. A limpeza não
+remove listas, URLs de entrega nem outras configurações dos materiais. Para
+Brevo, se a lista por material estiver vazia, usa a lista padrão global.
 
 Para URL de entrega, a ordem é:
 
