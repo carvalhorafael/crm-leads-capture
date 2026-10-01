@@ -4,6 +4,8 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+## 0.7.1 - release
+
 - Permite listar e remover pelo painel os metadados legados de provider por
   conteúdo, com confirmação e preservação das demais configurações de captura.
 
