@@ -4,6 +4,12 @@ Todas as mudancas relevantes deste projeto devem ser documentadas aqui.
 
 ## Nao publicado
 
+## 0.7.2 - release
+
+- Corrige o primeiro salvamento de um perfil em instalações onde a opção de
+  perfis ainda não existe, mantendo a sanitização idempotente nas duas
+  passagens executadas pela Settings API do WordPress.
+
 ## 0.7.1 - release
 
 - Permite listar e remover pelo painel os metadados legados de provider por

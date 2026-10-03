@@ -14,6 +14,7 @@ class CaptureProfileAdminTest extends WP_UnitTestCase {
 
 	public function set_up(): void {
 		parent::set_up();
+		$GLOBALS['wp_settings_errors'] = array();
 		$this->settings   = new CRM_Leads_Capture_Settings();
 		$this->repository = new CRM_Leads_Capture_Profile_Repository( $this->settings );
 		$this->admin      = new CRM_Leads_Capture_Profile_Admin( $this->repository, $this->settings );
@@ -45,6 +46,73 @@ class CaptureProfileAdminTest extends WP_UnitTestCase {
 		$this->repository->register_profiles( $registry );
 		$this->assertInstanceOf( CRM_Leads_Capture_Profile::class, $registry->resolve( 'coo' ) );
 		$this->assertSame( array( 12, 18 ), $registry->resolve( 'coo' )->provider_config( 'brevo' )['list_ids'] );
+	}
+
+	public function test_saves_first_profile_when_option_does_not_exist(): void {
+		delete_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES );
+		$this->admin->register_setting();
+
+		$this->assertTrue( update_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES, $this->profile_input() ) );
+
+		$stored = get_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES );
+		$this->assertArrayHasKey( 'coo', $stored );
+		$this->assertSame( 'coo_as_a_service', $stored['coo']['context']['source'] );
+		$this->assertSame( 'Recebemos seu contato.', $stored['coo']['success']['message'] );
+		$this->assertSame( 'https://example.com/obrigado', $stored['coo']['success']['redirect_url'] );
+		$this->assertSame( array(), get_settings_errors( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES ) );
+	}
+
+	public function test_creates_renames_and_deletes_profiles_after_first_save(): void {
+		delete_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES );
+		$this->admin->register_setting();
+		update_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES, $this->profile_input() );
+
+		$second         = $this->profile_input();
+		$second['slug'] = 'speaker';
+		$second['name'] = 'Convite para palestra';
+		$this->assertTrue( update_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES, $second ) );
+
+		$renamed                  = $this->profile_input();
+		$renamed['original_slug'] = 'coo';
+		$renamed['slug']          = 'executive';
+		$renamed['name']          = 'Executive Advisory';
+		$this->assertTrue( update_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES, $renamed ) );
+
+		$stored = get_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES );
+		$this->assertArrayNotHasKey( 'coo', $stored );
+		$this->assertSame( 'Executive Advisory', $stored['executive']['name'] );
+		$this->assertSame( 'Convite para palestra', $stored['speaker']['name'] );
+
+		$this->assertTrue(
+			update_option(
+				CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES,
+				array(
+					'original_slug' => 'executive',
+					'delete'        => '1',
+				)
+			)
+		);
+		$stored = get_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES );
+		$this->assertArrayNotHasKey( 'executive', $stored );
+		$this->assertSame( 'Convite para palestra', $stored['speaker']['name'] );
+	}
+
+	public function test_invalid_profile_does_not_replace_existing_profiles(): void {
+		$config = $this->repository->sanitize_profile( $this->profile_input() );
+		update_option( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES, array( 'coo' => $config ) );
+
+		$result = $this->repository->sanitize_option(
+			array(
+				'original_slug' => '',
+				'name'          => 'Perfil inválido',
+				'slug'          => '',
+				'fields'        => array(),
+			)
+		);
+
+		$this->assertSame( array( 'coo' => $config ), $result );
+		$errors = get_settings_errors( CRM_Leads_Capture_Profile_Repository::OPTION_PROFILES );
+		$this->assertSame( 'invalid_profile', $errors[0]['code'] );
 	}
 
 	public function test_sanitizes_allowed_values_for_select_fields(): void {
