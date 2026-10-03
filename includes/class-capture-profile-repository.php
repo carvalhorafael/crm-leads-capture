@@ -71,6 +71,10 @@ class CRM_Leads_Capture_Profile_Repository {
 	public function sanitize_option( $input ): array {
 		$stored = $this->all();
 		$input  = is_array( $input ) ? $input : array();
+		if ( $this->is_profile_collection( $input ) ) {
+			return $this->sanitize_profile_collection( $input );
+		}
+
 		$slug   = $this->clean_key( $input['original_slug'] ?? $input['slug'] ?? '' );
 
 		if ( true === (bool) ( $input['delete'] ?? false ) ) {
@@ -153,6 +157,8 @@ class CRM_Leads_Capture_Profile_Repository {
 			return null;
 		}
 
+		$context   = isset( $input['context'] ) && is_array( $input['context'] ) ? $input['context'] : array();
+		$success   = isset( $input['success'] ) && is_array( $input['success'] ) ? $input['success'] : array();
 		$providers = isset( $existing['providers'] ) && is_array( $existing['providers'] ) ? $existing['providers'] : array();
 		$active    = $this->settings->active_provider();
 		$submitted = isset( $input['providers'][ $active ] ) && is_array( $input['providers'][ $active ] ) ? $input['providers'][ $active ] : array();
@@ -162,16 +168,54 @@ class CRM_Leads_Capture_Profile_Repository {
 			'name'      => $name,
 			'slug'      => $slug,
 			'fields'    => $fields,
-			'context'   => array( 'source' => $this->clean_key( $input['source'] ?? $slug ) ),
+			'context'   => array( 'source' => $this->clean_key( $input['source'] ?? $context['source'] ?? $slug ) ),
 			'providers' => $providers,
 			'success'   => array_filter(
 				array(
-					'message'      => $this->clean_textarea( $input['success_message'] ?? '' ),
-					'redirect_url' => $this->clean_url( $input['redirect_url'] ?? '' ),
+					'message'      => $this->clean_textarea( $input['success_message'] ?? $success['message'] ?? '' ),
+					'redirect_url' => $this->clean_url( $input['redirect_url'] ?? $success['redirect_url'] ?? '' ),
 				),
 				static fn( string $value ): bool => '' !== $value
 			),
 		);
+	}
+
+	/**
+	 * Detects the normalized collection returned by the first Settings API
+	 * sanitization pass when WordPress creates a previously missing option.
+	 *
+	 * @param array<mixed> $input Submitted option value.
+	 */
+	private function is_profile_collection( array $input ): bool {
+		if ( array() === $input ) {
+			return true;
+		}
+
+		foreach ( $input as $key => $profile ) {
+			if ( ! is_array( $profile ) || ! isset( $profile['slug'], $profile['fields'] ) || $this->clean_key( $key ) !== $this->clean_key( $profile['slug'] ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * @param array<mixed> $profiles Normalized profiles keyed by slug.
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function sanitize_profile_collection( array $profiles ): array {
+		$sanitized = array();
+		foreach ( $profiles as $profile ) {
+			$config = $this->sanitize_profile( $profile, $profile );
+			if ( null === $config ) {
+				add_settings_error( self::OPTION_PROFILES, 'invalid_profile', __( 'O perfil precisa de nome, slug e pelo menos um campo válido.', 'crm-leads-capture' ) );
+				return $this->all();
+			}
+			$sanitized[ $config['slug'] ] = $config;
+		}
+
+		return $sanitized;
 	}
 
 	/**
